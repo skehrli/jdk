@@ -31,6 +31,7 @@ import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.lock.qual.ReleasesNoLocks;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.PolySigned;
@@ -155,8 +156,8 @@ import java.util.function.UnaryOperator;
  */
 
 @CFComment({"lock/nullness: Subclasses of this interface/class may opt to prohibit null elements"})
-@AnnotatedFor({"lock", "nullness", "index"})
-public interface List<E> extends Collection<E> {
+@AnnotatedFor({"lock", "nullness", "index", "resourceleak", "mustcall"})
+public interface List<E extends @MustCallUnknown Object> extends Collection<E> {
     // Query Operations
 
     /**

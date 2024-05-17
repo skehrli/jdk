@@ -26,6 +26,7 @@
 package java.util;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.NotOwning;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
@@ -64,7 +65,7 @@ import java.util.function.Consumer;
 @CFComment({"nullness: This @Covariant annotation is sound, but it would not be sound on",
             "ListIterator (a subclass of Iterator), which supports a set operation."
 })
-@AnnotatedFor({"lock", "nullness"})
+@AnnotatedFor({"lock", "nullness", "mustcall", "resourceleak"})
 @Covariant({0})
 public interface Iterator<E> {
     /**
@@ -83,7 +84,7 @@ public interface Iterator<E> {
      * @return the next element in the iteration
      * @throws NoSuchElementException if the iteration has no more elements
      */
-    E next(@GuardSatisfied Iterator<E> this);
+   @NotOwning E next(@GuardSatisfied Iterator<E> this);
 
     /**
      * Removes from the underlying collection the last element returned

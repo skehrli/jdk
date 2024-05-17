@@ -30,6 +30,7 @@ import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.checker.resourceleak.qual.MustCallUnknown;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -262,8 +263,8 @@ import java.util.stream.StreamSupport;
  */
 
 @CFComment("lock/nullness: Subclasses of this interface/class may opt to prohibit null elements")
-@AnnotatedFor({"lock", "nullness", "index"})
-public interface Collection<? extends @MustCallUnknown Object> extends Iterable<E> {
+@AnnotatedFor({"lock", "nullness", "index", "resourceleak", "mustcall"})
+public interface Collection<E extends @MustCallUnknown Object> extends Iterable<E> {
     // Query Operations
 
     /**
