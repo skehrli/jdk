@@ -27,6 +27,8 @@ package java.util;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.mustcall.qual.NotOwning;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
@@ -76,6 +78,7 @@ public interface Iterator<E> {
      * @return {@code true} if the iteration has more elements
      */
     @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     boolean hasNext(@GuardSatisfied Iterator<E> this);
 
     /**
@@ -84,7 +87,7 @@ public interface Iterator<E> {
      * @return the next element in the iteration
      * @throws NoSuchElementException if the iteration has no more elements
      */
-   @NotOwning E next(@GuardSatisfied Iterator<E> this);
+   @NotOwning E next(@GuardSatisfied @NonEmpty Iterator<E> this);
 
     /**
      * Removes from the underlying collection the last element returned
