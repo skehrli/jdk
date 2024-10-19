@@ -26,6 +26,7 @@
 package java.io;
 
 import org.checkerframework.checker.mustcall.qual.MustCall;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.LTEqLengthOf;
@@ -55,7 +56,7 @@ import java.util.Objects;
  * @see     java.io.PushbackInputStream
  * @since   1.0
  */
-@AnnotatedFor({"index"})
+@AnnotatedFor({"index", "resourceleak"})
 public abstract class InputStream implements Closeable {
 
     // MAX_SKIP_BUFFER_SIZE is used to determine the maximum buffer size to

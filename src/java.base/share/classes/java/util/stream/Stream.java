@@ -25,6 +25,7 @@
 package java.util.stream;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
@@ -172,10 +173,10 @@ import java.util.function.UnaryOperator;
  * @see DoubleStream
  * @see <a href="package-summary.html">java.util.stream</a>
  */
-@AnnotatedFor({"lock", "mustcall", "nullness"})
+@AnnotatedFor({"lock", "mustcall", "nullness", "resourceleak"})
 @CFComment({"MustCall: most Streams do not need to be closed.  There is no need for",
    "`@InheritableMustCall({})` because `AutoCloseable` already has that class annotation."})
-public interface Stream<T> extends BaseStream<T, Stream<T>> {
+public interface Stream<T extends @MustCallUnknown Object> extends BaseStream<T, Stream<T>> {
 
     /**
      * Returns a stream consisting of the elements of this stream that match
@@ -1124,7 +1125,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      */
     @CFComment("@SideEffectFree: the supplied functions should not have side effects")
     @SideEffectFree
-    <R> R collect(Supplier<R> supplier,
+    <R extends @MustCallUnknown Object> R collect(Supplier<R> supplier,
                   BiConsumer<R, ? super T> accumulator,
                   BiConsumer<R, R> combiner);
 

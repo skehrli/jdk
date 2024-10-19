@@ -36,6 +36,7 @@
 package java.util.concurrent.atomic;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.mustcall.qual.NotOwning;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.lang.invoke.MethodHandles;
@@ -51,7 +52,7 @@ import java.util.function.UnaryOperator;
  * @author Doug Lea
  * @param <V> The type of object referred to by this reference
  */
-@AnnotatedFor({"interning"})
+@AnnotatedFor({"interning", "resourceleak"})
 public @UsesObjectEquals class AtomicReference<V> implements java.io.Serializable {
     private static final long serialVersionUID = -1848883965231344442L;
     private static final VarHandle VALUE;
@@ -88,7 +89,7 @@ public @UsesObjectEquals class AtomicReference<V> implements java.io.Serializabl
      *
      * @return the current value
      */
-    public final V get() {
+    public final @NotOwning V get() {
         return value;
     }
 
