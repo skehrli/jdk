@@ -24,6 +24,7 @@
  */
 package java.util.stream;
 
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.util.Collections;
@@ -200,8 +201,10 @@ import java.util.function.Supplier;
  * @param <R> the result type of the reduction operation
  * @since 1.8
  */
-@AnnotatedFor({"lock", "nullness"})
-public interface Collector<T, A, R> {
+@AnnotatedFor({"lock", "nullness", "mustcall", "resourceleak"})
+public interface Collector<T extends @MustCallUnknown Object,
+                            A extends @MustCallUnknown Object,
+                            R extends @MustCallUnknown Object> {
     /**
      * A function that creates and returns a new mutable result container.
      *

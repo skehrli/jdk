@@ -69,7 +69,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * @author  Lee Boynton
  * @since   1.0
  */
-@AnnotatedFor({"lock", "nullness", "resourceleak"})
+@AnnotatedFor({"lock", "nullness", "mustcall", "resourceleak"})
 public interface Enumeration<E extends @MustCallUnknown Object> {
     /**
      * Tests if this enumeration contains more elements.

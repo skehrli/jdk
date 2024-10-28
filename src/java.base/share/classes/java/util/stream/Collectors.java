@@ -24,6 +24,7 @@
  */
 package java.util.stream;
 
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -108,7 +109,7 @@ import jdk.internal.access.SharedSecrets;
  *
  * @since 1.8
  */
-@AnnotatedFor({"lock", "nullness"})
+@AnnotatedFor({"lock", "nullness", "mustcall", "resourceleak"})
 public final class Collectors {
 
     static final Set<Collector.Characteristics> CH_CONCURRENT_ID

@@ -28,6 +28,7 @@ package java.util;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
@@ -105,7 +106,7 @@ import jdk.internal.access.SharedSecrets;
  * @since   1.2
  */
 
-@AnnotatedFor({"lock", "index", "nonempty", "nullness", "resourceleak"})
+@AnnotatedFor({"lock", "index", "nonempty", "nullness", "mustcall", "resourceleak"})
 public class Collections {
     // Suppresses default constructor, ensuring non-instantiability.
     private Collections() {
@@ -5664,9 +5665,9 @@ public class Collections {
      * @return an enumeration over the specified collection.
      * @see Enumeration
      */
-    public static <T extends @MustCallUnknown Object> Enumeration<T extends @MustCallUnknown Object> enumeration(final Collection<T extends @MustCallUnknown Object> c) {
-        return new Enumeration<T extends @MustCallUnknown Object>() {
-            private final Iterator<T extends @MustCallUnknown Object> i = c.iterator();
+    public static <T extends @MustCallUnknown Object> Enumeration<T> enumeration(final Collection<T> c) {
+        return new Enumeration<T>() {
+            private final Iterator<T> i = c.iterator();
 
             @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasMoreElements() {

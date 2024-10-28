@@ -25,6 +25,7 @@
 package java.util.stream;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
@@ -206,7 +207,7 @@ public interface Stream<T extends @MustCallUnknown Object> extends BaseStream<T,
      *               function to apply to each element
      * @return the new stream
      */
-    <R> @PolyNonEmpty Stream<R> map(@PolyNonEmpty Stream<T> this, Function<? super T, ? extends R> mapper);
+    <R extends @MustCallUnknown Object> @PolyNonEmpty Stream<R> map(@PolyNonEmpty Stream<T> this, Function<? super T, ? extends R> mapper);
 
     /**
      * Returns an {@code IntStream} consisting of the results of applying the
@@ -1183,7 +1184,7 @@ public interface Stream<T extends @MustCallUnknown Object> extends BaseStream<T,
      */
     @CFComment("@SideEffectFree: the collector should not have side effects")
     @SideEffectFree
-    <R, A> R collect(Collector<? super T, A, R> collector);
+    <R extends @MustCallUnknown Object, A extends @MustCallUnknown Object> R collect(Collector<? super T, A, Collection<T>> collector);
 
     /**
      * Accumulates the elements of this stream into a {@code List}. The elements in
