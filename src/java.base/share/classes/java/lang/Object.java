@@ -34,7 +34,6 @@ import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.checker.collectionownership.qual.OwningCollectionBottom;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.checker.tainting.qual.Untainted;
 import org.checkerframework.common.aliasing.qual.Unique;
@@ -88,7 +87,7 @@ public class Object {
     @SafeEffect
     @Pure
     @IntrinsicCandidate
-    public final native Class<? extends @MustCall() @OwningCollectionBottom Object> getClass(@PolyUI @GuardSatisfied @UnknownInitialization @UnknownSignedness Object this);
+    public final native Class<? extends @MustCall() Object> getClass(@PolyUI @GuardSatisfied @UnknownInitialization @UnknownSignedness Object this);
 
     /**
      * Returns a hash code value for the object. This method is
