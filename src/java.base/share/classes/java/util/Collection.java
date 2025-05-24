@@ -267,7 +267,7 @@ import java.util.stream.StreamSupport;
  */
 
 @CFComment("lock/nullness: Subclasses of this interface/class may opt to prohibit null elements")
-@AnnotatedFor({"lock", "nullness", "index", "resourceleak"})
+@AnnotatedFor({"lock", "nullness", "index", "resourceleak", "mustcall"})
 public interface Collection<E extends @MustCallUnknown Object> extends Iterable<E> {
     // Query Operations
 
