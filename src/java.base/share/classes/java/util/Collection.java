@@ -25,7 +25,7 @@
 
 package java.util;
 
-import org.checkerframework.checker.collectionownership.NotOwningCollection;
+import org.checkerframework.checker.collectionownership.qual.NotOwningCollection;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
