@@ -25,6 +25,7 @@
 
 package java.util;
 
+import org.checkerframework.checker.collectionownership.NotOwningCollection;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
@@ -279,7 +280,7 @@ public interface Collection<E extends @MustCallUnknown Object> extends Iterable<
      * @return the number of elements in this collection
      */
     @Pure
-    @NonNegative int size(@GuardSatisfied Collection<E> this);
+    @NonNegative int size(@GuardSatisfied @NotOwningCollection Collection<E> this);
 
     /**
      * Returns {@code true} if this collection contains no elements.
