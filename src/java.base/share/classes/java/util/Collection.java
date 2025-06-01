@@ -26,6 +26,7 @@
 package java.util;
 
 import org.checkerframework.checker.collectionownership.qual.NotOwningCollection;
+import org.checkerframework.checker.collectionownership.qual.OwningCollection;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
@@ -483,7 +484,7 @@ public interface Collection<E extends @MustCallUnknown Object> extends Iterable<
      *         time due to insertion restrictions
      */
     @EnsuresNonEmpty("this")
-    boolean add(@GuardSatisfied Collection<E> this, E e);
+    boolean add(@GuardSatisfied @OwningCollection Collection<E> this, E e);
 
     /**
      * Removes a single instance of the specified element from this

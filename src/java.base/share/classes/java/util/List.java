@@ -26,6 +26,7 @@
 package java.util;
 
 import org.checkerframework.checker.collectionownership.qual.NotOwningCollection;
+import org.checkerframework.checker.collectionownership.qual.OwningCollection;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.IndexFor;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
@@ -301,7 +302,7 @@ public interface List<E extends @MustCallUnknown Object> extends Collection<E> {
     @ReleasesNoLocks
     @SideEffectsOnly("this")
     @EnsuresNonEmpty("this")
-    boolean add(@GuardSatisfied List<E> this, E e);
+    boolean add(@GuardSatisfied @OwningCollection List<E> this, E e);
 
     /**
      * Removes the first occurrence of the specified element from this list,
