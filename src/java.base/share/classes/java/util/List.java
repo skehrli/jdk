@@ -302,7 +302,7 @@ public interface List<E extends @MustCallUnknown Object> extends Collection<E> {
     @ReleasesNoLocks
     @SideEffectsOnly("this")
     @EnsuresNonEmpty("this")
-    boolean add(@GuardSatisfied @OwningCollection List<E> this, E e);
+    boolean add(@GuardSatisfied @OwningCollection List<E> this, @Owning E e);
 
     /**
      * Removes the first occurrence of the specified element from this list,
