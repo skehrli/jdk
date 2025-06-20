@@ -24,6 +24,7 @@
  */
 package java.lang;
 
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.common.aliasing.qual.NonLeaked;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -43,8 +44,8 @@ import java.util.function.Consumer;
  * @since 1.5
  * @jls 14.14.2 The enhanced {@code for} statement
  */
-@AnnotatedFor({"aliasing", "lock", "nullness"})
-public interface Iterable<T> {
+@AnnotatedFor({"aliasing", "lock", "nullness", "mustcall"})
+public interface Iterable<T extends @MustCallUnknown Object> {
     /**
      * Returns an iterator over elements of type {@code T}.
      *
