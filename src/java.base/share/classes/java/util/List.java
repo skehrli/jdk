@@ -27,6 +27,8 @@ package java.util;
 
 import org.checkerframework.checker.collectionownership.qual.NotOwningCollection;
 import org.checkerframework.checker.collectionownership.qual.OwningCollection;
+import org.checkerframework.checker.collectionownership.qual.OwningCollectionWithoutObligation;
+import org.checkerframework.checker.collectionownership.qual.PolyOwningCollection;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.IndexFor;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
@@ -185,7 +187,7 @@ public interface List<E extends @MustCallUnknown Object> extends Collection<E> {
      */
     @Pure
     @EnsuresNonEmptyIf(result = false, expression = "this")
-    boolean isEmpty(@GuardSatisfied List<E> this);
+    boolean isEmpty(@GuardSatisfied @NotOwningCollection List<E> this);
 
     /**
      * Returns {@code true} if this list contains the specified element.
@@ -204,7 +206,7 @@ public interface List<E extends @MustCallUnknown Object> extends Collection<E> {
      */
     @Pure
     @EnsuresNonEmptyIf(result = true, expression = "this")
-    boolean contains(@GuardSatisfied List<E> this, @UnknownSignedness Object o);
+    boolean contains(@GuardSatisfied @NotOwningCollection List<E> this, @UnknownSignedness Object o);
 
     /**
      * Returns an iterator over the elements in this list in proper sequence.
@@ -212,7 +214,7 @@ public interface List<E extends @MustCallUnknown Object> extends Collection<E> {
      * @return an iterator over the elements in this list in proper sequence
      */
     @SideEffectFree
-    @PolyNonEmpty Iterator<E> iterator(@PolyNonEmpty List<E> this);
+    @PolyNonEmpty @PolyOwningCollection Iterator<E> iterator(@PolyNonEmpty @PolyOwningCollection List<E> this);
 
     /**
      * Returns an array containing all of the elements in this list in proper
@@ -327,6 +329,7 @@ public interface List<E extends @MustCallUnknown Object> extends Collection<E> {
      *         is not supported by this list
      */
     @SideEffectsOnly("this")
+    @EnsuresNonNullIf(expression = "#1", result=true)
     boolean remove(@GuardSatisfied List<E> this, @UnknownSignedness Object o);
 
 
@@ -407,7 +410,7 @@ public interface List<E extends @MustCallUnknown Object> extends Collection<E> {
      */
     @SideEffectsOnly("this")
     @EnsuresNonEmptyIf(result = true, expression = "this")
-    boolean addAll(@GuardSatisfied List<E> this, @IndexOrHigh({"this"}) int index, Collection<? extends E> c);
+    boolean addAll(@GuardSatisfied @OwningCollection List<E> this, @IndexOrHigh({"this"}) int index, @OwningCollection Collection<? extends E> c);
 
     /**
      * Removes from this list all of its elements that are contained in the
@@ -565,7 +568,7 @@ public interface List<E extends @MustCallUnknown Object> extends Collection<E> {
      * @throws UnsupportedOperationException if the {@code clear} operation
      *         is not supported by this list
      */
-    void clear(@GuardSatisfied List<E> this);
+    void clear(@GuardSatisfied @OwningCollectionWithoutObligation List<E> this);
 
 
     // Comparison and hashing
@@ -585,7 +588,7 @@ public interface List<E extends @MustCallUnknown Object> extends Collection<E> {
      * @return {@code true} if the specified object is equal to this list
      */
     @Pure
-    boolean equals(@GuardSatisfied List<E> this, @Nullable Object o);
+    boolean equals(@GuardSatisfied @NotOwningCollection List<E> this, @Nullable Object o);
 
     /**
      * Returns the hash code value for this list.  The hash code of a list
@@ -605,7 +608,7 @@ public interface List<E extends @MustCallUnknown Object> extends Collection<E> {
      * @see #equals(Object)
      */
     @Pure
-    int hashCode(@GuardSatisfied List<E> this);
+    int hashCode(@GuardSatisfied @NotOwningCollection List<E> this);
 
 
     // Positional Access Operations
@@ -619,7 +622,7 @@ public interface List<E extends @MustCallUnknown Object> extends Collection<E> {
      *         ({@code index < 0 || index >= size()})
      */
     @Pure
-    E get(@GuardSatisfied @NotOwningCollection List<E> this, @IndexFor({"this"}) int index);
+    @NotOwning E get(@GuardSatisfied @NotOwningCollection List<E> this, @IndexFor({"this"}) int index);
 
     /**
      * Replaces the element at the specified position in this list with the
@@ -639,7 +642,7 @@ public interface List<E extends @MustCallUnknown Object> extends Collection<E> {
      * @throws IndexOutOfBoundsException if the index is out of range
      *         ({@code index < 0 || index >= size()})
      */
-    E set(@GuardSatisfied List<E> this, @IndexFor({"this"}) int index, E element);
+    E set(@GuardSatisfied @OwningCollection List<E> this, @IndexFor({"this"}) int index, @Owning E element);
 
     /**
      * Inserts the specified element at the specified position in this list
@@ -662,7 +665,7 @@ public interface List<E extends @MustCallUnknown Object> extends Collection<E> {
      */
     @ReleasesNoLocks
     @SideEffectsOnly("this")
-    void add(@GuardSatisfied List<E> this, @IndexOrHigh({"this"}) int index, E element);
+    void add(@GuardSatisfied @OwningCollection List<E> this, @IndexOrHigh({"this"}) int index, @Owning E element);
 
     /**
      * Removes the element at the specified position in this list (optional
@@ -678,7 +681,7 @@ public interface List<E extends @MustCallUnknown Object> extends Collection<E> {
      *         ({@code index < 0 || index >= size()})
      */
     @ReleasesNoLocks
-    E remove(@GuardSatisfied List<E> this, @IndexFor({"this"}) int index);
+    E remove(@GuardSatisfied @NotOwningCollection List<E> this, @IndexFor({"this"}) int index);
 
 
     // Search Operations
@@ -701,7 +704,7 @@ public interface List<E extends @MustCallUnknown Object> extends Collection<E> {
      *         (<a href="Collection.html#optional-restrictions">optional</a>)
      */
     @Pure
-    @GTENegativeOne int indexOf(@GuardSatisfied List<E> this, @GuardSatisfied @UnknownSignedness Object o);
+    @GTENegativeOne int indexOf(@GuardSatisfied @NotOwningCollection List<E> this, @GuardSatisfied @UnknownSignedness Object o);
 
     /**
      * Returns the index of the last occurrence of the specified element
@@ -721,7 +724,7 @@ public interface List<E extends @MustCallUnknown Object> extends Collection<E> {
      *         (<a href="Collection.html#optional-restrictions">optional</a>)
      */
     @Pure
-    @GTENegativeOne int lastIndexOf(@GuardSatisfied List<E> this, @GuardSatisfied @UnknownSignedness Object o);
+    @GTENegativeOne int lastIndexOf(@GuardSatisfied @NotOwningCollection List<E> this, @GuardSatisfied @UnknownSignedness Object o);
 
 
     // List Iterators

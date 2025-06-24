@@ -25,17 +25,21 @@
 
 package java.util;
 
+import org.checkerframework.checker.collectionownership.qual.CreatesCollectionObligation;
 import org.checkerframework.checker.collectionownership.qual.NotOwningCollection;
 import org.checkerframework.checker.collectionownership.qual.OwningCollection;
+import org.checkerframework.checker.collectionownership.qual.OwningCollectionWithoutObligation;
 import org.checkerframework.checker.collectionownership.qual.PolyOwningCollection;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.CreatesMustCallFor;
 import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.mustcall.qual.Owning;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.PolySigned;
@@ -292,7 +296,7 @@ public interface Collection<E extends @MustCallUnknown Object> extends Iterable<
      */
     @Pure
     @EnsuresNonEmptyIf(result = false, expression = "this")
-    boolean isEmpty(@GuardSatisfied Collection<E> this);
+    boolean isEmpty(@GuardSatisfied @NotOwningCollection Collection<E> this);
 
     /**
      * Returns {@code true} if this collection contains the specified element.
@@ -315,7 +319,7 @@ public interface Collection<E extends @MustCallUnknown Object> extends Iterable<
                 "(though I think a nicer specification would be to return false in that case)"})
     @Pure
     @EnsuresNonEmptyIf(result = true, expression = "this")
-    boolean contains(@GuardSatisfied Collection<E> this, @GuardSatisfied @UnknownSignedness Object o);
+    boolean contains(@GuardSatisfied @NotOwningCollection Collection<E> this, @GuardSatisfied @UnknownSignedness Object o);
 
     /**
      * Returns an iterator over the elements in this collection.  There are no
@@ -486,6 +490,7 @@ public interface Collection<E extends @MustCallUnknown Object> extends Iterable<
      *         time due to insertion restrictions
      */
     @EnsuresNonEmpty("this")
+    @CreatesCollectionObligation
     boolean add(@GuardSatisfied @OwningCollection Collection<E> this, @Owning E e);
 
     /**
@@ -508,6 +513,7 @@ public interface Collection<E extends @MustCallUnknown Object> extends Iterable<
      * @throws UnsupportedOperationException if the {@code remove} operation
      *         is not supported by this collection
      */
+    @EnsuresNonNullIf(expression = "#1", result=true)
     boolean remove(@GuardSatisfied Collection<E> this, @UnknownSignedness Object o);
 
 
@@ -558,7 +564,8 @@ public interface Collection<E extends @MustCallUnknown Object> extends Iterable<
      *         this time due to insertion restrictions
      * @see #add(Object)
      */
-    boolean addAll(@GuardSatisfied Collection<E> this, Collection<? extends E> c);
+    @CreatesCollectionObligation
+    boolean addAll(@GuardSatisfied @OwningCollection Collection<E> this, @OwningCollection Collection<? extends E> c);
 
     /**
      * Removes all of this collection's elements that are also contained in the
@@ -651,7 +658,7 @@ public interface Collection<E extends @MustCallUnknown Object> extends Iterable<
      * @throws UnsupportedOperationException if the {@code clear} operation
      *         is not supported by this collection
      */
-    void clear(@GuardSatisfied Collection<E> this);
+    void clear(@GuardSatisfied @OwningCollectionWithoutObligation Collection<E> this);
 
 
     // Comparison and hashing
@@ -690,7 +697,7 @@ public interface Collection<E extends @MustCallUnknown Object> extends Iterable<
      * @see List#equals(Object)
      */
     @Pure
-    boolean equals(@GuardSatisfied Collection<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o);
+    boolean equals(@GuardSatisfied @NotOwningCollection Collection<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o);
 
     /**
      * Returns the hash code value for this collection.  While the
@@ -708,7 +715,7 @@ public interface Collection<E extends @MustCallUnknown Object> extends Iterable<
      * @see Object#equals(Object)
      */
     @Pure
-    int hashCode(@GuardSatisfied Collection<E> this);
+    int hashCode(@GuardSatisfied @NotOwningCollection Collection<E> this);
 
     /**
      * Creates a {@link Spliterator} over the elements in this collection.
