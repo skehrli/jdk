@@ -25,6 +25,7 @@
 
 package java.util;
 
+import org.checkerframework.checker.collectionownership.qual.NotOwningCollection;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.mustcall.qual.NotOwning;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
@@ -80,7 +81,7 @@ public interface Iterator<E> {
      */
     @Pure
     @EnsuresNonEmptyIf(result = true, expression = "this")
-    boolean hasNext(@GuardSatisfied Iterator<E> this);
+    boolean hasNext(@GuardSatisfied @NotOwningCollection Iterator<E> this);
 
     /**
      * Returns the next element in the iteration.
@@ -89,7 +90,7 @@ public interface Iterator<E> {
      * @throws NoSuchElementException if the iteration has no more elements
      */
     @SideEffectsOnly("this")
-    @NotOwning E next(@GuardSatisfied @NonEmpty Iterator<E> this);
+    @NotOwning E next(@GuardSatisfied @NonEmpty @NotOwningCollection Iterator<E> this);
 
     /**
      * Removes from the underlying collection the last element returned
