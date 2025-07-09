@@ -25,6 +25,7 @@
 
 package java.util;
 
+import org.checkerframework.checker.collectionownership.qual.NotOwningCollection;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.lock.qual.ReleasesNoLocks;
@@ -193,7 +194,7 @@ public interface Map<K, V extends @MustCallUnknown Object> {
      * @return the number of key-value mappings in this map
      */
     @Pure
-    @NonNegative int size(@GuardSatisfied Map<K, V> this);
+    @NonNegative int size(@GuardSatisfied @NotOwningCollection Map<K, V> this);
 
     /**
      * Returns {@code true} if this map contains no key-value mappings.
@@ -202,7 +203,7 @@ public interface Map<K, V extends @MustCallUnknown Object> {
      */
     @Pure
     @EnsuresNonEmptyIf(result = false, expression = "this")
-    boolean isEmpty(@GuardSatisfied Map<K, V> this);
+    boolean isEmpty(@GuardSatisfied @NotOwningCollection Map<K, V> this);
 
     /**
      * Returns {@code true} if this map contains a mapping for the specified
@@ -225,7 +226,7 @@ public interface Map<K, V extends @MustCallUnknown Object> {
     @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @EnsuresNonEmptyIf(result=true, expression={"this"})
     @Pure
-    boolean containsKey(@GuardSatisfied Map<K, V> this, @GuardSatisfied @UnknownSignedness Object key);
+    boolean containsKey(@GuardSatisfied @NotOwningCollection Map<K, V> this, @GuardSatisfied @UnknownSignedness Object key);
 
     /**
      * Returns {@code true} if this map maps one or more keys to the
@@ -247,7 +248,7 @@ public interface Map<K, V extends @MustCallUnknown Object> {
      */
     @EnsuresNonEmptyIf(result=true, expression={"this"})
     @Pure
-    boolean containsValue(@GuardSatisfied Map<K, V> this, @GuardSatisfied @UnknownSignedness Object value);
+    boolean containsValue(@GuardSatisfied @NotOwningCollection Map<K, V> this, @GuardSatisfied @UnknownSignedness Object value);
 
     /**
      * Returns the value to which the specified key is mapped,
@@ -276,7 +277,7 @@ public interface Map<K, V extends @MustCallUnknown Object> {
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
     @Pure
-    @Nullable V get(@GuardSatisfied Map<K, V> this, @UnknownSignedness @GuardSatisfied Object key);
+    @Nullable V get(@GuardSatisfied @NotOwningCollection Map<K, V> this, @UnknownSignedness @GuardSatisfied Object key);
 
     // Modification Operations
 
