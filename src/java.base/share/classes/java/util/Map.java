@@ -469,7 +469,7 @@ public interface Map<K, V extends @MustCallUnknown Object> {
      * @since 1.2
      */
     @Covariant({0})
-    interface Entry<K, V> {
+    interface Entry<K, V extends @MustCallUnknown Object> {
         /**
          * Returns the key corresponding to this entry.
          *
