@@ -27,6 +27,7 @@ package java.util;
 
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
@@ -153,8 +154,8 @@ import jdk.internal.access.SharedSecrets;
  * @see     Hashtable
  * @since   1.2
  */
-@AnnotatedFor({"lock", "nullness", "index"})
-public class HashMap<K,V> extends AbstractMap<K,V>
+@AnnotatedFor({"lock", "nullness", "index", "resourceleak"})
+public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,V>
     implements Map<K,V>, Cloneable, Serializable {
 
     @java.io.Serial
