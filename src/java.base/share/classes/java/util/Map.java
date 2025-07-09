@@ -492,6 +492,7 @@ public interface Map<K, V extends @MustCallUnknown Object> {
          *         removed from the backing map.
          */
         @Pure
+        @NotOwning
         V getValue(Map.@GuardSatisfied Entry<K, V> this);
 
         /**
