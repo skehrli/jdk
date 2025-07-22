@@ -278,6 +278,7 @@ public interface Map<K, V extends @MustCallUnknown Object> {
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
     @Pure
+    @NotOwning
     @Nullable V get(@GuardSatisfied @NotOwningCollection Map<K, V> this, @UnknownSignedness @GuardSatisfied Object key);
 
     // Modification Operations
