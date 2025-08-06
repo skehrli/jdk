@@ -398,7 +398,7 @@ public interface Map<K, V extends @MustCallUnknown Object> {
      * @return a set view of the keys contained in this map
      */
     @SideEffectFree
-    @PolyNonEmpty Set<@KeyFor({"this"}) K> keySet(@GuardSatisfied @PolyNonEmpty Map<K, V> this);
+    @PolyNonEmpty Set<@KeyFor({"this"}) K> keySet(@NotOwningCollection Map<K, V> this, @GuardSatisfied @PolyNonEmpty Map<K, V> this);
 
     /**
      * Returns a {@link Collection} view of the values contained in this map.
