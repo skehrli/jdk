@@ -31,6 +31,8 @@ import org.checkerframework.checker.collectionownership.qual.OwningCollection;
 import org.checkerframework.checker.collectionownership.qual.OwningCollectionWithoutObligation;
 import org.checkerframework.checker.collectionownership.qual.PolyOwningCollection;
 import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.index.qual.PolyGrowShrink;
+import org.checkerframework.checker.index.qual.Shrinkable;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.mustcall.qual.CreatesMustCallFor;
 import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
@@ -330,7 +332,7 @@ public interface Collection<E extends @MustCallUnknown Object> extends Iterable<
      * @return an {@code Iterator} over the elements in this collection
      */
     @SideEffectFree
-    @PolyNonEmpty @PolyOwningCollection Iterator<E> iterator(@PolyNonEmpty @PolyOwningCollection Collection<E> this);
+    @PolyGrowShrink @PolyNonEmpty @PolyOwningCollection Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty @PolyOwningCollection Collection<E> this);
 
     /**
      * Returns an array containing all of the elements in this collection.
@@ -514,8 +516,7 @@ public interface Collection<E extends @MustCallUnknown Object> extends Iterable<
      *         is not supported by this collection
      */
     @EnsuresNonNullIf(expression = "#1", result=true)
-    boolean remove(@GuardSatisfied Collection<E> this, @UnknownSignedness Object o);
-
+    boolean remove(@GuardSatisfied @Shrinkable Collection<E> this, @UnknownSignedness Object o);
 
     // Bulk Operations
 
@@ -590,7 +591,7 @@ public interface Collection<E extends @MustCallUnknown Object> extends Iterable<
      * @see #remove(Object)
      * @see #contains(Object)
      */
-    boolean removeAll(@GuardSatisfied Collection<E> this, Collection<? extends @UnknownSignedness Object> c);
+    boolean removeAll(@GuardSatisfied @Shrinkable Collection<E> this, Collection<? extends @UnknownSignedness Object> c);
 
     /**
      * Removes all of the elements of this collection that satisfy the given
@@ -614,7 +615,7 @@ public interface Collection<E extends @MustCallUnknown Object> extends Iterable<
      *         supported.
      * @since 1.8
      */
-    default boolean removeIf(Predicate<? super E> filter) {
+    default boolean removeIf(@Shrinkable Collection<E> this, Predicate<? super E> filter) {
         Objects.requireNonNull(filter);
         boolean removed = false;
         final Iterator<E> each = iterator();
@@ -649,7 +650,7 @@ public interface Collection<E extends @MustCallUnknown Object> extends Iterable<
      * @see #remove(Object)
      * @see #contains(Object)
      */
-    boolean retainAll(@GuardSatisfied Collection<E> this, Collection<? extends @UnknownSignedness Object> c);
+    boolean retainAll(@GuardSatisfied @Shrinkable Collection<E> this, Collection<? extends @UnknownSignedness Object> c);
 
     /**
      * Removes all of the elements from this collection (optional operation).
@@ -658,8 +659,7 @@ public interface Collection<E extends @MustCallUnknown Object> extends Iterable<
      * @throws UnsupportedOperationException if the {@code clear} operation
      *         is not supported by this collection
      */
-    void clear(@GuardSatisfied @OwningCollectionWithoutObligation Collection<E> this);
-
+    void clear(@GuardSatisfied @Shrinkable @OwningCollectionWithoutObligation Collection<E> this);
 
     // Comparison and hashing
 
