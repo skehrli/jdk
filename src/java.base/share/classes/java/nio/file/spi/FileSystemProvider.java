@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,7 @@
 package java.nio.file.spi;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.nio.channels.AsynchronousFileChannel;
@@ -113,7 +114,7 @@ import sun.nio.ch.FileChannelImpl;
  * @since 1.7
  */
 
-@AnnotatedFor({"interning"})
+@AnnotatedFor({"interning", "nullness"})
 public abstract @UsesObjectEquals class FileSystemProvider {
     // lock using when loading providers
     private static final Object lock = new Object();
@@ -415,13 +416,11 @@ public abstract @UsesObjectEquals class FileSystemProvider {
     public InputStream newInputStream(Path path, OpenOption... options)
         throws IOException
     {
-        if (options.length > 0) {
-            for (OpenOption opt: options) {
-                // All OpenOption values except for APPEND and WRITE are allowed
-                if (opt == StandardOpenOption.APPEND ||
-                    opt == StandardOpenOption.WRITE)
-                    throw new UnsupportedOperationException("'" + opt + "' not allowed");
-            }
+        for (OpenOption opt : options) {
+            // All OpenOption values except for APPEND and WRITE are allowed
+            if (opt == StandardOpenOption.APPEND ||
+                opt == StandardOpenOption.WRITE)
+                throw new UnsupportedOperationException("'" + opt + "' not allowed");
         }
         ReadableByteChannel rbc = Files.newByteChannel(path, options);
         if (rbc instanceof FileChannelImpl) {
@@ -586,7 +585,7 @@ public abstract @UsesObjectEquals class FileSystemProvider {
      */
     public AsynchronousFileChannel newAsynchronousFileChannel(Path path,
                                                               Set<? extends OpenOption> options,
-                                                              ExecutorService executor,
+                                                              @Nullable ExecutorService executor,
                                                               FileAttribute<?>... attrs)
         throws IOException
     {
@@ -1074,7 +1073,7 @@ public abstract @UsesObjectEquals class FileSystemProvider {
      * @return  a file attribute view of the specified type, or {@code null} if
      *          the attribute view type is not available
      */
-    public abstract <V extends FileAttributeView> V
+    public abstract <V extends @Nullable FileAttributeView> V
         getFileAttributeView(Path path, Class<V> type, LinkOption... options);
 
     /**
@@ -1133,7 +1132,7 @@ public abstract @UsesObjectEquals class FileSystemProvider {
      *          installed, its {@link SecurityManager#checkRead(String) checkRead}
      *          method denies read access to the file. If this method is invoked
      *          to read security sensitive attributes then the security manager
-     *          may be invoke to check for additional permissions.
+     *          may be invoked to check for additional permissions.
      */
     public abstract Map<String,Object> readAttributes(Path path, String attributes,
                                                       LinkOption... options)
@@ -1174,4 +1173,122 @@ public abstract @UsesObjectEquals class FileSystemProvider {
     public abstract void setAttribute(Path path, String attribute,
                                       Object value, LinkOption... options)
         throws IOException;
+
+    /**
+     * Tests whether a file exists. This method works in exactly the
+     * manner specified by the {@link Files#exists(Path, LinkOption...)} method.
+     *
+     * @implSpec
+     * The default implementation of this method invokes the
+     * {@link #checkAccess(Path, AccessMode...)} method when symbolic links
+     * are followed. If the option {@link LinkOption#NOFOLLOW_LINKS NOFOLLOW_LINKS}
+     * is present then symbolic links are not followed and the method
+     * {@link #readAttributes(Path, Class, LinkOption...)} is called
+     * to determine whether a file exists.
+     *
+     * @param   path
+     *          the path to the file to test
+     * @param   options
+     *          options indicating how symbolic links are handled
+     *
+     * @return  {@code true} if the file exists; {@code false} if the file does
+     *          not exist or its existence cannot be determined.
+     *
+     * @throws  SecurityException
+     *          In the case of the default provider, the {@link
+     *          SecurityManager#checkRead(String)} is invoked to check
+     *          read access to the file.
+     *
+     * @since 20
+     */
+    public boolean exists(Path path, LinkOption... options) {
+        try {
+            if (followLinks(options)) {
+                this.checkAccess(path);
+            } else {
+                // attempt to read attributes without following links
+                readAttributes(path, BasicFileAttributes.class,  LinkOption.NOFOLLOW_LINKS);
+            }
+            // file exists
+            return true;
+        } catch (IOException x) {
+            // does not exist or unable to determine if file exists
+            return false;
+        }
+    }
+
+    /**
+     * Reads a file's attributes as a bulk operation if it exists.
+     *
+     * <p> The {@code type} parameter is the type of the attributes required
+     * and this method returns an instance of that type if supported. All
+     * implementations support a basic set of file attributes and so invoking
+     * this method with a  {@code type} parameter of {@code
+     * BasicFileAttributes.class} will not throw {@code
+     * UnsupportedOperationException}.
+     *
+     * <p> The {@code options} array may be used to indicate how symbolic links
+     * are handled for the case that the file is a symbolic link. By default,
+     * symbolic links are followed and the file attribute of the final target
+     * of the link is read. If the option {@link LinkOption#NOFOLLOW_LINKS
+     * NOFOLLOW_LINKS} is present then symbolic links are not followed.
+     *
+     * <p> It is implementation specific if all file attributes are read as an
+     * atomic operation with respect to other file system operations.
+     *
+     * @implSpec
+     * The default implementation of this method invokes the
+     * {@link #readAttributes(Path, Class, LinkOption...)} method
+     * to read the file's attributes.
+     *
+     * @param   <A>
+     *          The {@code BasicFileAttributes} type
+     * @param   path
+     *          the path to the file
+     * @param   type
+     *          the {@code Class} of the file attributes required
+     *          to read
+     * @param   options
+     *          options indicating how symbolic links are handled
+     *
+     * @return  the file attributes or null if the file does not exist
+     *
+     * @throws  UnsupportedOperationException
+     *          if an attributes of the given type are not supported
+     * @throws  IOException
+     *          if an I/O error occurs
+     * @throws  SecurityException
+     *          In the case of the default provider, a security manager is
+     *          installed, its {@link SecurityManager#checkRead(String) checkRead}
+     *          method is invoked to check read access to the file. If this
+     *          method is invoked to read security sensitive attributes then the
+     *          security manager may be invoked to check for additional permissions.
+     *
+     * @since 20
+     */
+    public <A extends BasicFileAttributes> A readAttributesIfExists(Path path,
+                                                                    Class<A> type,
+                                                                    LinkOption... options)
+        throws IOException
+    {
+        try {
+            return readAttributes(path, type, options);
+        } catch (NoSuchFileException ignore) {
+            return null;
+        }
+    }
+
+    private static boolean followLinks(LinkOption... options) {
+        boolean followLinks = true;
+        for (LinkOption opt: options) {
+            if (opt == LinkOption.NOFOLLOW_LINKS) {
+                followLinks = false;
+                continue;
+            }
+            if (opt == null)
+                throw new NullPointerException();
+            throw new AssertionError("Should not get here");
+        }
+        return followLinks;
+    }
 }

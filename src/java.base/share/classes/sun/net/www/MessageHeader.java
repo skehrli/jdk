@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,7 +30,8 @@
 package sun.net.www;
 
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.io.*;
 import java.util.Collections;
@@ -211,7 +212,8 @@ class MessageHeader {
                 return false;
             }
         }
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public String next() {
             synchronized (lock) {
                 if (haveNext) {
@@ -225,6 +227,7 @@ class MessageHeader {
                 }
             }
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public void remove () {
             throw new UnsupportedOperationException ("remove not allowed");
         }
@@ -250,7 +253,7 @@ class MessageHeader {
             String[] excludeList, Map<String, List<String>>  include) {
         boolean skipIt = false;
         Map<String, List<String>> m = new HashMap<>();
-        for (int i = nkeys; --i >= 0;) {
+        for (int i = 0; i < nkeys; i++) {
             if (excludeList != null) {
                 // check if the key is in the excludeList.
                 // if so, don't include it in the Map.

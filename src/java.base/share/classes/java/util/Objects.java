@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2009, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -187,6 +187,30 @@ public final @UsesObjectEquals class Objects {
     }
 
     /**
+     * {@return a string equivalent to the string returned by {@code
+     * Object.toString} if that method and {@code hashCode} are not
+     * overridden}
+     *
+     * @implNote
+     * This method constructs a string for an object without calling
+     * any overridable methods of the object.
+     *
+     * @implSpec
+     * The method returns a string equivalent to:<br>
+     * {@code o.getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(o))}
+     *
+     * @param o an object
+     * @throws NullPointerException if the argument is null
+     * @see Object#toString
+     * @see System#identityHashCode(Object)
+     * @since 19
+     */
+    public static String toIdentityString(Object o) {
+        requireNonNull(o);
+        return o.getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(o));
+    }
+
+    /**
      * Returns 0 if the arguments are identical and {@code
      * c.compare(a, b)} otherwise.
      * Consequently, if both arguments are {@code null} 0
@@ -228,6 +252,7 @@ public final @UsesObjectEquals class Objects {
      */
     @CFComment({"lock: TODO: treat like other nullness assertion methods in the Checker Framework."})
     @EnsuresNonNull("#1")
+    @ForceInline
     public static <T> @NonNull T requireNonNull(@NonNull T obj) {
         if (obj == null)
             throw new NullPointerException();
@@ -255,6 +280,7 @@ public final @UsesObjectEquals class Objects {
      */
     @EnsuresNonNull("#1")
     @SideEffectFree
+    @ForceInline
     public static <T> @NonNull T requireNonNull(@GuardSatisfied @NonNull @UnknownSignedness T obj, @Nullable String message) {
         if (obj == null)
             throw new NullPointerException(message);
@@ -275,8 +301,8 @@ public final @UsesObjectEquals class Objects {
      * @see java.util.function.Predicate
      * @since 1.8
      */
-    @EnsuresNonNullIf(expression={"#1"}, result=false)
     @Pure
+    @EnsuresNonNullIf(expression={"#1"}, result=false)
     public static boolean isNull(@GuardSatisfied @Nullable @UnknownSignedness Object obj) {
         return obj == null;
     }
@@ -295,8 +321,8 @@ public final @UsesObjectEquals class Objects {
      * @see java.util.function.Predicate
      * @since 1.8
      */
-    @EnsuresNonNullIf(expression={"#1"}, result=true)
     @Pure
+    @EnsuresNonNullIf(expression={"#1"}, result=true)
     public static boolean nonNull(@GuardSatisfied @Nullable @UnknownSignedness Object obj) {
         return obj != null;
     }
@@ -359,8 +385,8 @@ public final @UsesObjectEquals class Objects {
      * @throws NullPointerException if {@code obj} is {@code null}
      * @since 1.8
      */
-    @EnsuresNonNull("#1")
     @Pure
+    @EnsuresNonNull("#1")
     public static <T> @NonNull T requireNonNull(@GuardSatisfied @NonNull @UnknownSignedness T obj, @GuardSatisfied Supplier<String> messageSupplier) {
         if (obj == null)
             throw new NullPointerException(messageSupplier == null ?

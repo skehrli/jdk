@@ -41,6 +41,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 /**
  * A {@link SortedMap} extended with navigation methods returning the
@@ -73,12 +74,18 @@ import org.checkerframework.framework.qual.CFComment;
  * {@link #pollLastEntry} that return and/or remove the least and
  * greatest mappings, if any exist, else returning {@code null}.
  *
- * <p>Implementations of entry-returning methods are expected to
- * return {@code Map.Entry} pairs representing snapshots of mappings
- * at the time they were produced, and thus generally do <em>not</em>
- * support the optional {@code Entry.setValue} method. Note however
- * that it is possible to change mappings in the associated map using
- * method {@code put}.
+ * <p>The methods
+ * {@link #ceilingEntry},
+ * {@link #firstEntry},
+ * {@link #floorEntry},
+ * {@link #higherEntry},
+ * {@link #lastEntry},
+ * {@link #lowerEntry},
+ * {@link #pollFirstEntry}, and
+ * {@link #pollLastEntry}
+ * return {@link Map.Entry} instances that represent snapshots of mappings as
+ * of the time of the call. They do <em>not</em> support mutation of the
+ * underlying map via the optional {@link Map.Entry#setValue setValue} method.
  *
  * <p>Methods
  * {@link #subMap(Object, Object) subMap(K, K)},
@@ -245,6 +252,8 @@ public interface NavigableMap<K,V> extends SortedMap<K,V> {
      * @return the removed first entry of this map,
      *         or {@code null} if this map is empty
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     Map.@Nullable Entry<K,V> pollFirstEntry(@GuardSatisfied NavigableMap<K, V> this);
 
     /**
@@ -254,6 +263,8 @@ public interface NavigableMap<K,V> extends SortedMap<K,V> {
      * @return the removed last entry of this map,
      *         or {@code null} if this map is empty
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     Map.@Nullable Entry<K,V> pollLastEntry(@GuardSatisfied NavigableMap<K, V> this);
 
     /**
@@ -441,4 +452,20 @@ public interface NavigableMap<K,V> extends SortedMap<K,V> {
      */
     @SideEffectFree
     SortedMap<K,V> tailMap(K fromKey);
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * This method is equivalent to {@link #descendingMap descendingMap}.
+     *
+     * @implSpec
+     * The implementation in this interface returns the result of calling the
+     * {@code descendingMap} method.
+     *
+     * @return a reverse-ordered view of this map, as a {@code NavigableMap}
+     * @since 21
+     */
+    default NavigableMap<K, V> reversed() {
+        return this.descendingMap();
+    }
 }

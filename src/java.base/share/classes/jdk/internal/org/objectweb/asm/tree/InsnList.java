@@ -56,9 +56,11 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package jdk.internal.org.objectweb.asm.tree;
 
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
 import jdk.internal.org.objectweb.asm.MethodVisitor;
@@ -520,12 +522,19 @@ public class InsnList implements Iterable<AbstractInsnNode> {
         AbstractInsnNode remove;
 
         InsnListIterator(final int index) {
-            if (index == size()) {
+            if (index < 0 || index > size()) {
+                throw new IndexOutOfBoundsException();
+            } else if (index == size()) {
                 nextInsn = null;
                 previousInsn = getLast();
             } else {
-                nextInsn = get(index);
-                previousInsn = nextInsn.previousInsn;
+                AbstractInsnNode currentInsn = getFirst();
+                for (int i = 0; i < index; i++) {
+                    currentInsn = currentInsn.nextInsn;
+                }
+
+                nextInsn = currentInsn;
+                previousInsn = currentInsn.previousInsn;
             }
         }
 
@@ -535,6 +544,7 @@ public class InsnList implements Iterable<AbstractInsnNode> {
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public Object next() {
             if (nextInsn == null) {
                 throw new NoSuchElementException();
@@ -547,6 +557,7 @@ public class InsnList implements Iterable<AbstractInsnNode> {
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public void remove() {
             if (remove != null) {
                 if (remove == nextInsn) {
@@ -601,6 +612,7 @@ public class InsnList implements Iterable<AbstractInsnNode> {
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public void add(final Object o) {
             if (nextInsn != null) {
                 InsnList.this.insertBefore(nextInsn, (AbstractInsnNode) o);
@@ -614,6 +626,7 @@ public class InsnList implements Iterable<AbstractInsnNode> {
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public void set(final Object o) {
             if (remove != null) {
                 InsnList.this.set(remove, (AbstractInsnNode) o);
@@ -628,3 +641,4 @@ public class InsnList implements Iterable<AbstractInsnNode> {
         }
     }
 }
+

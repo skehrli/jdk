@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,7 +26,7 @@
 package sun.nio.fs;
 
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.nio.file.*;
 import java.nio.file.attribute.*;
@@ -170,7 +170,7 @@ class WindowsFileSystem
         }
 
         @Override
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         public synchronized FileStore next() {
             if (next == null)
                 next = readNext();
@@ -208,8 +208,7 @@ class WindowsFileSystem
     }
 
     // supported views
-    private static final Set<String> supportedFileAttributeViews = Collections
-        .unmodifiableSet(new HashSet<String>(Arrays.asList("basic", "dos", "acl", "owner", "user")));
+    private static final Set<String> supportedFileAttributeViews = Set.of("basic", "dos", "acl", "owner", "user");
 
     @Override
     public Set<String> supportedFileAttributeViews() {
@@ -266,7 +265,7 @@ class WindowsFileSystem
     @Override
     public PathMatcher getPathMatcher(String syntaxAndInput) {
         int pos = syntaxAndInput.indexOf(':');
-        if (pos <= 0 || pos == syntaxAndInput.length())
+        if (pos <= 0)
             throw new IllegalArgumentException();
         String syntax = syntaxAndInput.substring(0, pos);
         String input = syntaxAndInput.substring(pos+1);

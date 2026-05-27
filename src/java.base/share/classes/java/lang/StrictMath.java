@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -47,8 +47,28 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
  * Library," <a
  * href="https://www.netlib.org/fdlibm/">{@code fdlibm}</a>. These
  * algorithms, which are written in the C programming language, are
- * then to be understood as executed with all floating-point
- * operations following the rules of Java floating-point arithmetic.
+ * then to be understood to be transliterated into Java and executed
+ * with all floating-point and integer operations following the rules
+ * of Java arithmetic. The following transformations are used in the
+ * transliteration:
+ *
+ * <ul>
+ * <li>Extraction and setting of the high and low halves of a 64-bit
+ * {@code double} in C is expressed using Java platform methods that
+ * perform bit-wise conversions {@linkplain
+ * Double#doubleToRawLongBits(double) from {@code double} to {@code
+ * long}} and {@linkplain Double#longBitsToDouble(long) {@code long}
+ * to {@code double}}.
+ *
+ * <li>Unsigned {@code int} values in C are mapped to signed {@code
+ * int} values in Java with updates to operations to replicate
+ * unsigned semantics where the results on the same textual operation
+ * would differ. For example, {@code >>} shifts on unsigned C values
+ * are replaced with {@code >>>} shifts on signed Java values. Sized
+ * comparisons on unsigned C values ({@code <}, {@code <=}, {@code >},
+ * {@code >=}) are replaced with semantically equivalent calls to
+ * {@link Integer#compareUnsigned(int, int) compareUnsigned}.
+ * </ul>
  *
  * <p>The Java math library is defined with respect to
  * {@code fdlibm} version 5.3. Where {@code fdlibm} provides
@@ -71,13 +91,8 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
  * will not overflow the range of values of the computation.
  * The best practice is to choose the primitive type and algorithm to avoid
  * overflow. In cases where the size is {@code int} or {@code long} and
- * overflow errors need to be detected, the methods {@code addExact},
- * {@code subtractExact}, {@code multiplyExact}, {@code toIntExact},
- * {@code incrementExact}, {@code decrementExact} and {@code negateExact}
- * throw an {@code ArithmeticException} when the results overflow.
- * For the arithmetic operations divide and absolute value, overflow
- * occurs only with a specific minimum or maximum value and
- * should be checked against the minimum or maximum as appropriate.
+ * overflow errors need to be detected, the methods whose names end with
+ * {@code Exact} throw an {@code ArithmeticException} when the results overflow.
  *
  * <h2><a id=Ieee754RecommendedOps>IEEE 754 Recommended
  * Operations</a></h2>
@@ -87,6 +102,9 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
  * {@code StrictMath} methods <a
  * href="Math.html#Ieee754RecommendedOps">relate to the IEEE 754
  * recommended operations</a>.
+ *
+ * @see <a href="https://standards.ieee.org/ieee/754/6210/">
+ *      <cite>IEEE Standard for Floating-Point Arithmetic</cite></a>
  *
  * @author  Joseph D. Darcy
  * @since   1.3
@@ -103,27 +121,27 @@ public final @UsesObjectEquals class StrictMath {
      * The {@code double} value that is closer than any other to
      * <i>e</i>, the base of the natural logarithms.
      */
-    public static final double E = 2.7182818284590452354;
+    public static final double E = 2.718281828459045;
 
     /**
      * The {@code double} value that is closer than any other to
-     * <i>pi</i>, the ratio of the circumference of a circle to its
+     * <i>pi</i> (&pi;), the ratio of the circumference of a circle to its
      * diameter.
      */
-    public static final double PI = 3.14159265358979323846;
+    public static final double PI = 3.141592653589793;
 
     /**
-     * Constant by which to multiply an angular value in degrees to obtain an
-     * angular value in radians.
+     * The {@code double} value that is closer than any other to
+     * <i>tau</i> (&tau;), the ratio of the circumference of a circle
+     * to its radius.
+     *
+     * @apiNote
+     * The value of <i>pi</i> is one half that of <i>tau</i>; in other
+     * words, <i>tau</i> is double <i>pi</i> .
+     *
+     * @since 19
      */
-    private static final double DEGREES_TO_RADIANS = 0.017453292519943295;
-
-    /**
-     * Constant by which to multiply an angular value in radians to obtain an
-     * angular value in degrees.
-     */
-
-    private static final double RADIANS_TO_DEGREES = 57.29577951308232;
+    public static final double TAU = 2.0 * PI;
 
     /**
      * Returns the trigonometric sine of an angle. Special cases:
@@ -135,7 +153,11 @@ public final @UsesObjectEquals class StrictMath {
      * @param   a   an angle, in radians.
      * @return  the sine of the argument.
      */
-    public static native double sin(double a);
+    @Pure
+    @StaticallyExecutable
+    public static double sin(double a) {
+        return FdLibm.Sin.compute(a);
+    }
 
     /**
      * Returns the trigonometric cosine of an angle. Special cases:
@@ -147,7 +169,11 @@ public final @UsesObjectEquals class StrictMath {
      * @param   a   an angle, in radians.
      * @return  the cosine of the argument.
      */
-    public static native double cos(double a);
+    @Pure
+    @StaticallyExecutable
+    public static double cos(double a) {
+        return FdLibm.Cos.compute(a);
+    }
 
     /**
      * Returns the trigonometric tangent of an angle. Special cases:
@@ -159,7 +185,11 @@ public final @UsesObjectEquals class StrictMath {
      * @param   a   an angle, in radians.
      * @return  the tangent of the argument.
      */
-    public static native double tan(double a);
+    @Pure
+    @StaticallyExecutable
+    public static double tan(double a) {
+        return FdLibm.Tan.compute(a);
+    }
 
     /**
      * Returns the arc sine of a value; the returned angle is in the
@@ -172,7 +202,11 @@ public final @UsesObjectEquals class StrictMath {
      * @param   a   the value whose arc sine is to be returned.
      * @return  the arc sine of the argument.
      */
-    public static native double asin(double a);
+    @Pure
+    @StaticallyExecutable
+    public static double asin(double a) {
+        return FdLibm.Asin.compute(a);
+    }
 
     /**
      * Returns the arc cosine of a value; the returned angle is in the
@@ -185,7 +219,11 @@ public final @UsesObjectEquals class StrictMath {
      * @param   a   the value whose arc cosine is to be returned.
      * @return  the arc cosine of the argument.
      */
-    public static native double acos(double a);
+    @Pure
+    @StaticallyExecutable
+    public static double acos(double a) {
+        return FdLibm.Acos.compute(a);
+    }
 
     /**
      * Returns the arc tangent of a value; the returned angle is in the
@@ -201,7 +239,11 @@ public final @UsesObjectEquals class StrictMath {
      * @param   a   the value whose arc tangent is to be returned.
      * @return  the arc tangent of the argument.
      */
-    public static native double atan(double a);
+    @Pure
+    @StaticallyExecutable
+    public static double atan(double a) {
+        return FdLibm.Atan.compute(a);
+    }
 
     /**
      * Converts an angle measured in degrees to an approximately
@@ -212,6 +254,8 @@ public final @UsesObjectEquals class StrictMath {
      * @return  the measurement of the angle {@code angdeg}
      *          in radians.
      */
+    @Pure
+    @StaticallyExecutable
     public static double toRadians(double angdeg) {
         return Math.toRadians(angdeg);
     }
@@ -227,6 +271,8 @@ public final @UsesObjectEquals class StrictMath {
      * @return  the measurement of the angle {@code angrad}
      *          in degrees.
      */
+    @Pure
+    @StaticallyExecutable
     public static double toDegrees(double angrad) {
         return Math.toDegrees(angrad);
     }
@@ -246,6 +292,8 @@ public final @UsesObjectEquals class StrictMath {
      * @return  the value <i>e</i><sup>{@code a}</sup>,
      *          where <i>e</i> is the base of the natural logarithms.
      */
+    @Pure
+    @StaticallyExecutable
     public static double exp(double a) {
         return FdLibm.Exp.compute(a);
     }
@@ -267,7 +315,11 @@ public final @UsesObjectEquals class StrictMath {
      * @return  the value ln&nbsp;{@code a}, the natural logarithm of
      *          {@code a}.
      */
-    public static native double log(double a);
+    @Pure
+    @StaticallyExecutable
+    public static double log(double a) {
+        return FdLibm.Log.compute(a);
+    }
 
     /**
      * Returns the base 10 logarithm of a {@code double} value.
@@ -289,7 +341,11 @@ public final @UsesObjectEquals class StrictMath {
      * @return  the base 10 logarithm of  {@code a}.
      * @since 1.5
      */
-    public static native double log10(double a);
+    @Pure
+    @StaticallyExecutable
+    public static double log10(double a) {
+        return FdLibm.Log10.compute(a);
+    }
 
     /**
      * Returns the correctly rounded positive square root of a
@@ -307,8 +363,12 @@ public final @UsesObjectEquals class StrictMath {
      * @param   a   a value.
      * @return  the positive square root of {@code a}.
      */
+    @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
-    public static native double sqrt(double a);
+    public static double sqrt(double a) {
+        return FdLibm.Sqrt.compute(a);
+    }
 
     /**
      * Returns the cube root of a {@code double} value.  For
@@ -333,6 +393,8 @@ public final @UsesObjectEquals class StrictMath {
      * @return  the cube root of {@code a}.
      * @since 1.5
      */
+    @Pure
+    @StaticallyExecutable
     public static double cbrt(double a) {
         return FdLibm.Cbrt.compute(a);
     }
@@ -359,7 +421,11 @@ public final @UsesObjectEquals class StrictMath {
      * @return  the remainder when {@code f1} is divided by
      *          {@code f2}.
      */
-    public static native double IEEEremainder(double f1, double f2);
+    @Pure
+    @StaticallyExecutable
+    public static double IEEEremainder(double f1, double f2) {
+        return FdLibm.IEEEremainder.compute(f1, f2);
+    }
 
     /**
      * Returns the smallest (closest to negative infinity)
@@ -379,6 +445,8 @@ public final @UsesObjectEquals class StrictMath {
      *          floating-point value that is greater than or equal to
      *          the argument and is equal to a mathematical integer.
      */
+    @Pure
+    @StaticallyExecutable
     public static double ceil(double a) {
         return floorOrCeil(a, -0.0, 1.0, 1.0);
     }
@@ -398,6 +466,8 @@ public final @UsesObjectEquals class StrictMath {
      *          floating-point value that less than or equal to the argument
      *          and is equal to a mathematical integer.
      */
+    @Pure
+    @StaticallyExecutable
     public static double floor(double a) {
         return floorOrCeil(a, -1.0, 0.0, -1.0);
     }
@@ -408,8 +478,10 @@ public final @UsesObjectEquals class StrictMath {
      * @param a the value to be floored or ceiled
      * @param negativeBoundary result for values in (-1, 0)
      * @param positiveBoundary result for values in (0, 1)
-     * @param increment value to add when the argument is non-integral
+     * @param sign the sign of the result
      */
+    @Pure
+    @StaticallyExecutable
     private static double floorOrCeil(double a,
                                       double negativeBoundary,
                                       double positiveBoundary,
@@ -419,8 +491,8 @@ public final @UsesObjectEquals class StrictMath {
         if (exponent < 0) {
             /*
              * Absolute value of argument is less than 1.
-             * floorOrceil(-0.0) => -0.0
-             * floorOrceil(+0.0) => +0.0
+             * floorOrCeil(-0.0) => -0.0
+             * floorOrCeil(+0.0) => +0.0
              */
             return ((a == 0.0) ? a :
                     ( (a < 0.0) ?  negativeBoundary : positiveBoundary) );
@@ -463,6 +535,8 @@ public final @UsesObjectEquals class StrictMath {
      *          equal to a mathematical integer.
      * @author Joseph D. Darcy
      */
+    @Pure
+    @StaticallyExecutable
     public static double rint(double a) {
         /*
          * If the absolute value of a is not less than 2^52, it
@@ -545,7 +619,11 @@ public final @UsesObjectEquals class StrictMath {
      *          in polar coordinates that corresponds to the point
      *          (<i>x</i>,&nbsp;<i>y</i>) in Cartesian coordinates.
      */
-    public static native double atan2(double y, double x);
+    @Pure
+    @StaticallyExecutable
+    public static double atan2(double y, double x) {
+        return FdLibm.Atan2.compute(y, x);
+    }
 
     /**
      * Returns the value of the first argument raised to the power of the
@@ -677,6 +755,8 @@ public final @UsesObjectEquals class StrictMath {
      * @param   b   the exponent.
      * @return  the value {@code a}<sup>{@code b}</sup>.
      */
+    @Pure
+    @StaticallyExecutable
     public static double pow(double a, double b) {
         return FdLibm.Pow.compute(a, b);
     }
@@ -700,6 +780,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see     java.lang.Integer#MAX_VALUE
      * @see     java.lang.Integer#MIN_VALUE
      */
+    @Pure
+    @StaticallyExecutable
     public static int round(float a) {
         return Math.round(a);
     }
@@ -724,6 +806,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see     java.lang.Long#MAX_VALUE
      * @see     java.lang.Long#MIN_VALUE
      */
+    @Pure
+    @StaticallyExecutable
     public static long round(double a) {
         return Math.round(a);
     }
@@ -770,6 +854,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#addExact(int,int)
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static int addExact(int x, int y) {
         return Math.addExact(x, y);
     }
@@ -785,6 +871,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#addExact(long,long)
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static long addExact(long x, long y) {
         return Math.addExact(x, y);
     }
@@ -800,6 +888,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#subtractExact(int,int)
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static int subtractExact(int x, int y) {
         return Math.subtractExact(x, y);
     }
@@ -815,6 +905,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#subtractExact(long,long)
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static long subtractExact(long x, long y) {
         return Math.subtractExact(x, y);
     }
@@ -830,6 +922,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#multiplyExact(int,int)
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static int multiplyExact(int x, int y) {
         return Math.multiplyExact(x, y);
     }
@@ -845,6 +939,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#multiplyExact(long,int)
      * @since 9
      */
+    @Pure
+    @StaticallyExecutable
     public static long multiplyExact(long x, int y) {
         return Math.multiplyExact(x, y);
     }
@@ -860,8 +956,196 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#multiplyExact(long,long)
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static long multiplyExact(long x, long y) {
         return Math.multiplyExact(x, y);
+    }
+
+    /**
+     * Returns the quotient of the arguments, throwing an exception if the
+     * result overflows an {@code int}.  Such overflow occurs in this method if
+     * {@code x} is {@link Integer#MIN_VALUE} and {@code y} is {@code -1}.
+     * In contrast, if {@code Integer.MIN_VALUE / -1} were evaluated directly,
+     * the result would be {@code Integer.MIN_VALUE} and no exception would be
+     * thrown.
+     * <p>
+     * If {@code y} is zero, an {@code ArithmeticException} is thrown
+     * (JLS {@jls 15.17.2}).
+     * <p>
+     * The built-in remainder operator "{@code %}" is a suitable counterpart
+     * both for this method and for the built-in division operator "{@code /}".
+     *
+     * @param x the dividend
+     * @param y the divisor
+     * @return the quotient {@code x / y}
+     * @throws ArithmeticException if {@code y} is zero or the quotient
+     * overflows an int
+     * @jls 15.17.2 Division Operator /
+     * @see Math#divideExact(int,int)
+     * @since 18
+     */
+    @Pure
+    @StaticallyExecutable
+    public static int divideExact(int x, int y) {
+        return Math.divideExact(x, y);
+    }
+
+    /**
+     * Returns the quotient of the arguments, throwing an exception if the
+     * result overflows a {@code long}.  Such overflow occurs in this method if
+     * {@code x} is {@link Long#MIN_VALUE} and {@code y} is {@code -1}.
+     * In contrast, if {@code Long.MIN_VALUE / -1} were evaluated directly,
+     * the result would be {@code Long.MIN_VALUE} and no exception would be
+     * thrown.
+     * <p>
+     * If {@code y} is zero, an {@code ArithmeticException} is thrown
+     * (JLS {@jls 15.17.2}).
+     * <p>
+     * The built-in remainder operator "{@code %}" is a suitable counterpart
+     * both for this method and for the built-in division operator "{@code /}".
+     *
+     * @param x the dividend
+     * @param y the divisor
+     * @return the quotient {@code x / y}
+     * @throws ArithmeticException if {@code y} is zero or the quotient
+     * overflows a long
+     * @jls 15.17.2 Division Operator /
+     * @see Math#divideExact(long,long)
+     * @since 18
+     */
+    @Pure
+    @StaticallyExecutable
+    public static long divideExact(long x, long y) {
+        return Math.divideExact(x, y);
+    }
+
+    /**
+     * Returns the largest (closest to positive infinity)
+     * {@code int} value that is less than or equal to the algebraic quotient.
+     * This method is identical to {@link #floorDiv(int,int)} except that it
+     * throws an {@code ArithmeticException} when the dividend is
+     * {@linkplain Integer#MIN_VALUE Integer.MIN_VALUE} and the divisor is
+     * {@code -1} instead of ignoring the integer overflow and returning
+     * {@code Integer.MIN_VALUE}.
+     * <p>
+     * The floor modulus method {@link #floorMod(int,int)} is a suitable
+     * counterpart both for this method and for the {@link #floorDiv(int,int)}
+     * method.
+     * <p>
+     * See {@link Math#floorDiv(int, int) Math.floorDiv} for examples and
+     * a comparison to the integer division {@code /} operator.
+     *
+     * @param x the dividend
+     * @param y the divisor
+     * @return the largest (closest to positive infinity)
+     * {@code int} value that is less than or equal to the algebraic quotient.
+     * @throws ArithmeticException if the divisor {@code y} is zero, or the
+     * dividend {@code x} is {@code Integer.MIN_VALUE} and the divisor {@code y}
+     * is {@code -1}.
+     * @see Math#floorDiv(int, int)
+     * @since 18
+     */
+    @Pure
+    @StaticallyExecutable
+    public static int floorDivExact(int x, int y) {
+        return Math.floorDivExact(x, y);
+    }
+
+    /**
+     * Returns the largest (closest to positive infinity)
+     * {@code long} value that is less than or equal to the algebraic quotient.
+     * This method is identical to {@link #floorDiv(long,long)} except that it
+     * throws an {@code ArithmeticException} when the dividend is
+     * {@linkplain Long#MIN_VALUE Long.MIN_VALUE} and the divisor is
+     * {@code -1} instead of ignoring the integer overflow and returning
+     * {@code Long.MIN_VALUE}.
+     * <p>
+     * The floor modulus method {@link #floorMod(long,long)} is a suitable
+     * counterpart both for this method and for the {@link #floorDiv(long,long)}
+     * method.
+     * <p>
+     * For examples, see {@link Math#floorDiv(int, int) Math.floorDiv}.
+     *
+     * @param x the dividend
+     * @param y the divisor
+     * @return the largest (closest to positive infinity)
+     * {@code long} value that is less than or equal to the algebraic quotient.
+     * @throws ArithmeticException if the divisor {@code y} is zero, or the
+     * dividend {@code x} is {@code Long.MIN_VALUE} and the divisor {@code y}
+     * is {@code -1}.
+     * @see Math#floorDiv(int, int)
+     * @see Math#floorDiv(long,long)
+     * @since 18
+     */
+    @Pure
+    @StaticallyExecutable
+    public static long floorDivExact(long x, long y) {
+        return Math.floorDivExact(x, y);
+    }
+
+    /**
+     * Returns the smallest (closest to negative infinity)
+     * {@code int} value that is greater than or equal to the algebraic quotient.
+     * This method is identical to {@link #ceilDiv(int,int)} except that it
+     * throws an {@code ArithmeticException} when the dividend is
+     * {@linkplain Integer#MIN_VALUE Integer.MIN_VALUE} and the divisor is
+     * {@code -1} instead of ignoring the integer overflow and returning
+     * {@code Integer.MIN_VALUE}.
+     * <p>
+     * The ceil modulus method {@link #ceilMod(int,int)} is a suitable
+     * counterpart both for this method and for the {@link #ceilDiv(int,int)}
+     * method.
+     * <p>
+     * See {@link Math#ceilDiv(int, int) Math.ceilDiv} for examples and
+     * a comparison to the integer division {@code /} operator.
+     *
+     * @param x the dividend
+     * @param y the divisor
+     * @return the smallest (closest to negative infinity)
+     * {@code int} value that is greater than or equal to the algebraic quotient.
+     * @throws ArithmeticException if the divisor {@code y} is zero, or the
+     * dividend {@code x} is {@code Integer.MIN_VALUE} and the divisor {@code y}
+     * is {@code -1}.
+     * @see Math#ceilDiv(int, int)
+     * @since 18
+     */
+    @Pure
+    @StaticallyExecutable
+    public static int ceilDivExact(int x, int y) {
+        return Math.ceilDivExact(x, y);
+    }
+
+    /**
+     * Returns the smallest (closest to negative infinity)
+     * {@code long} value that is greater than or equal to the algebraic quotient.
+     * This method is identical to {@link #ceilDiv(long,long)} except that it
+     * throws an {@code ArithmeticException} when the dividend is
+     * {@linkplain Long#MIN_VALUE Long.MIN_VALUE} and the divisor is
+     * {@code -1} instead of ignoring the integer overflow and returning
+     * {@code Long.MIN_VALUE}.
+     * <p>
+     * The ceil modulus method {@link #ceilMod(long,long)} is a suitable
+     * counterpart both for this method and for the {@link #ceilDiv(long,long)}
+     * method.
+     * <p>
+     * For examples, see {@link Math#ceilDiv(int, int) Math.ceilDiv}.
+     *
+     * @param x the dividend
+     * @param y the divisor
+     * @return the smallest (closest to negative infinity)
+     * {@code long} value that is greater than or equal to the algebraic quotient.
+     * @throws ArithmeticException if the divisor {@code y} is zero, or the
+     * dividend {@code x} is {@code Long.MIN_VALUE} and the divisor {@code y}
+     * is {@code -1}.
+     * @see Math#ceilDiv(int, int)
+     * @see Math#ceilDiv(long,long)
+     * @since 18
+     */
+    @Pure
+    @StaticallyExecutable
+    public static long ceilDivExact(long x, long y) {
+        return Math.ceilDivExact(x, y);
     }
 
     /**
@@ -876,6 +1160,7 @@ public final @UsesObjectEquals class StrictMath {
      * @since 14
      */
     @Pure
+    @StaticallyExecutable
     public static int incrementExact(int a) {
         return Math.incrementExact(a);
     }
@@ -892,6 +1177,7 @@ public final @UsesObjectEquals class StrictMath {
      * @since 14
      */
     @Pure
+    @StaticallyExecutable
     public static long incrementExact(long a) {
         return Math.incrementExact(a);
     }
@@ -908,6 +1194,7 @@ public final @UsesObjectEquals class StrictMath {
      * @since 14
      */
     @Pure
+    @StaticallyExecutable
     public static int decrementExact(int a) {
         return Math.decrementExact(a);
     }
@@ -924,6 +1211,7 @@ public final @UsesObjectEquals class StrictMath {
      * @since 14
      */
     @Pure
+    @StaticallyExecutable
     public static long decrementExact(long a) {
         return Math.decrementExact(a);
     }
@@ -940,6 +1228,7 @@ public final @UsesObjectEquals class StrictMath {
      * @since 14
      */
     @Pure
+    @StaticallyExecutable
     public static int negateExact(int a) {
         return Math.negateExact(a);
     }
@@ -956,6 +1245,7 @@ public final @UsesObjectEquals class StrictMath {
      * @since 14
      */
     @Pure
+    @StaticallyExecutable
     public static long negateExact(long a) {
         return Math.negateExact(a);
     }
@@ -970,6 +1260,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#toIntExact(long)
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static int toIntExact(long value) {
         return Math.toIntExact(value);
     }
@@ -983,6 +1275,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#multiplyFull(int,int)
      * @since 9
      */
+    @Pure
+    @StaticallyExecutable
     public static long multiplyFull(int x, int y) {
         return Math.multiplyFull(x, y);
     }
@@ -994,20 +1288,40 @@ public final @UsesObjectEquals class StrictMath {
      * @param x the first value
      * @param y the second value
      * @return the result
+     * @see #unsignedMultiplyHigh
      * @see Math#multiplyHigh(long,long)
      * @since 9
      */
+    @Pure
+    @StaticallyExecutable
     public static long multiplyHigh(long x, long y) {
         return Math.multiplyHigh(x, y);
     }
 
     /**
+     * Returns as a {@code long} the most significant 64 bits of the unsigned
+     * 128-bit product of two unsigned 64-bit factors.
+     *
+     * @param x the first value
+     * @param y the second value
+     * @return the result
+     * @see #multiplyHigh
+     * @see Math#unsignedMultiplyHigh(long,long)
+     * @since 18
+     */
+    @Pure
+    @StaticallyExecutable
+    public static long unsignedMultiplyHigh(long x, long y) {
+        return Math.unsignedMultiplyHigh(x, y);
+    }
+
+    /**
      * Returns the largest (closest to positive infinity)
      * {@code int} value that is less than or equal to the algebraic quotient.
-     * There is one special case, if the dividend is the
+     * There is one special case: if the dividend is
      * {@linkplain Integer#MIN_VALUE Integer.MIN_VALUE} and the divisor is {@code -1},
      * then integer overflow occurs and
-     * the result is equal to the {@code Integer.MIN_VALUE}.
+     * the result is equal to {@code Integer.MIN_VALUE}.
      * <p>
      * See {@link Math#floorDiv(int, int) Math.floorDiv} for examples and
      * a comparison to the integer division {@code /} operator.
@@ -1021,6 +1335,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#floor(double)
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static int floorDiv(int x, int y) {
         return Math.floorDiv(x, y);
     }
@@ -1028,7 +1344,7 @@ public final @UsesObjectEquals class StrictMath {
     /**
      * Returns the largest (closest to positive infinity)
      * {@code long} value that is less than or equal to the algebraic quotient.
-     * There is one special case, if the dividend is the
+     * There is one special case: if the dividend is
      * {@linkplain Long#MIN_VALUE Long.MIN_VALUE} and the divisor is {@code -1},
      * then integer overflow occurs and
      * the result is equal to {@code Long.MIN_VALUE}.
@@ -1039,12 +1355,14 @@ public final @UsesObjectEquals class StrictMath {
      * @param x the dividend
      * @param y the divisor
      * @return the largest (closest to positive infinity)
-     * {@code int} value that is less than or equal to the algebraic quotient.
+     * {@code long} value that is less than or equal to the algebraic quotient.
      * @throws ArithmeticException if the divisor {@code y} is zero
      * @see Math#floorDiv(long, int)
      * @see Math#floor(double)
      * @since 9
      */
+    @Pure
+    @StaticallyExecutable
     public static long floorDiv(long x, int y) {
         return Math.floorDiv(x, y);
     }
@@ -1052,10 +1370,10 @@ public final @UsesObjectEquals class StrictMath {
     /**
      * Returns the largest (closest to positive infinity)
      * {@code long} value that is less than or equal to the algebraic quotient.
-     * There is one special case, if the dividend is the
+     * There is one special case: if the dividend is
      * {@linkplain Long#MIN_VALUE Long.MIN_VALUE} and the divisor is {@code -1},
      * then integer overflow occurs and
-     * the result is equal to the {@code Long.MIN_VALUE}.
+     * the result is equal to {@code Long.MIN_VALUE}.
      * <p>
      * See {@link Math#floorDiv(int, int) Math.floorDiv} for examples and
      * a comparison to the integer division {@code /} operator.
@@ -1069,6 +1387,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#floor(double)
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static long floorDiv(long x, long y) {
         return Math.floorDiv(x, y);
     }
@@ -1076,13 +1396,14 @@ public final @UsesObjectEquals class StrictMath {
     /**
      * Returns the floor modulus of the {@code int} arguments.
      * <p>
-     * The floor modulus is {@code x - (floorDiv(x, y) * y)},
-     * has the same sign as the divisor {@code y}, and
+     * The floor modulus is {@code r = x - (floorDiv(x, y) * y)},
+     * has the same sign as the divisor {@code y} or is zero, and
      * is in the range of {@code -abs(y) < r < +abs(y)}.
+     *
      * <p>
      * The relationship between {@code floorDiv} and {@code floorMod} is such that:
      * <ul>
-     *   <li>{@code floorDiv(x, y) * y + floorMod(x, y) == x}
+     *   <li>{@code floorDiv(x, y) * y + floorMod(x, y) == x}</li>
      * </ul>
      * <p>
      * See {@link Math#floorMod(int, int) Math.floorMod} for examples and
@@ -1096,6 +1417,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see StrictMath#floorDiv(int, int)
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static int floorMod(int x, int y) {
         return Math.floorMod(x , y);
     }
@@ -1103,14 +1426,14 @@ public final @UsesObjectEquals class StrictMath {
     /**
      * Returns the floor modulus of the {@code long} and {@code int} arguments.
      * <p>
-     * The floor modulus is {@code x - (floorDiv(x, y) * y)},
-     * has the same sign as the divisor {@code y}, and
+     * The floor modulus is {@code r = x - (floorDiv(x, y) * y)},
+     * has the same sign as the divisor {@code y} or is zero, and
      * is in the range of {@code -abs(y) < r < +abs(y)}.
      *
      * <p>
      * The relationship between {@code floorDiv} and {@code floorMod} is such that:
      * <ul>
-     *   <li>{@code floorDiv(x, y) * y + floorMod(x, y) == x}
+     *   <li>{@code floorDiv(x, y) * y + floorMod(x, y) == x}</li>
      * </ul>
      * <p>
      * See {@link Math#floorMod(int, int) Math.floorMod} for examples and
@@ -1124,6 +1447,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see StrictMath#floorDiv(long, int)
      * @since 9
      */
+    @Pure
+    @StaticallyExecutable
     public static int floorMod(long x, int y) {
         return Math.floorMod(x , y);
     }
@@ -1131,13 +1456,14 @@ public final @UsesObjectEquals class StrictMath {
     /**
      * Returns the floor modulus of the {@code long} arguments.
      * <p>
-     * The floor modulus is {@code x - (floorDiv(x, y) * y)},
-     * has the same sign as the divisor {@code y}, and
+     * The floor modulus is {@code r = x - (floorDiv(x, y) * y)},
+     * has the same sign as the divisor {@code y} or is zero, and
      * is in the range of {@code -abs(y) < r < +abs(y)}.
+     *
      * <p>
      * The relationship between {@code floorDiv} and {@code floorMod} is such that:
      * <ul>
-     *   <li>{@code floorDiv(x, y) * y + floorMod(x, y) == x}
+     *   <li>{@code floorDiv(x, y) * y + floorMod(x, y) == x}</li>
      * </ul>
      * <p>
      * See {@link Math#floorMod(int, int) Math.floorMod} for examples and
@@ -1151,8 +1477,178 @@ public final @UsesObjectEquals class StrictMath {
      * @see StrictMath#floorDiv(long, long)
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static long floorMod(long x, long y) {
         return Math.floorMod(x, y);
+    }
+
+    /**
+     * Returns the smallest (closest to negative infinity)
+     * {@code int} value that is greater than or equal to the algebraic quotient.
+     * There is one special case: if the dividend is
+     * {@linkplain Integer#MIN_VALUE Integer.MIN_VALUE} and the divisor is {@code -1},
+     * then integer overflow occurs and
+     * the result is equal to {@code Integer.MIN_VALUE}.
+     * <p>
+     * See {@link Math#ceilDiv(int, int) Math.ceilDiv} for examples and
+     * a comparison to the integer division {@code /} operator.
+     *
+     * @param x the dividend
+     * @param y the divisor
+     * @return the smallest (closest to negative infinity)
+     * {@code int} value that is greater than or equal to the algebraic quotient.
+     * @throws ArithmeticException if the divisor {@code y} is zero
+     * @see Math#ceilDiv(int, int)
+     * @see Math#ceil(double)
+     * @since 18
+     */
+    @Pure
+    @StaticallyExecutable
+    public static int ceilDiv(int x, int y) {
+        return Math.ceilDiv(x, y);
+    }
+
+    /**
+     * Returns the smallest (closest to negative infinity)
+     * {@code long} value that is greater than or equal to the algebraic quotient.
+     * There is one special case: if the dividend is
+     * {@linkplain Long#MIN_VALUE Long.MIN_VALUE} and the divisor is {@code -1},
+     * then integer overflow occurs and
+     * the result is equal to {@code Long.MIN_VALUE}.
+     * <p>
+     * See {@link Math#ceilDiv(int, int) Math.ceilDiv} for examples and
+     * a comparison to the integer division {@code /} operator.
+     *
+     * @param x the dividend
+     * @param y the divisor
+     * @return the smallest (closest to negative infinity)
+     * {@code long} value that is greater than or equal to the algebraic quotient.
+     * @throws ArithmeticException if the divisor {@code y} is zero
+     * @see Math#ceilDiv(long, int)
+     * @see Math#ceil(double)
+     * @since 18
+     */
+    @Pure
+    @StaticallyExecutable
+    public static long ceilDiv(long x, int y) {
+        return Math.ceilDiv(x, y);
+    }
+
+    /**
+     * Returns the smallest (closest to negative infinity)
+     * {@code long} value that is greater than or equal to the algebraic quotient.
+     * There is one special case: if the dividend is
+     * {@linkplain Long#MIN_VALUE Long.MIN_VALUE} and the divisor is {@code -1},
+     * then integer overflow occurs and
+     * the result is equal to {@code Long.MIN_VALUE}.
+     * <p>
+     * See {@link Math#ceilDiv(int, int) Math.ceilDiv} for examples and
+     * a comparison to the integer division {@code /} operator.
+     *
+     * @param x the dividend
+     * @param y the divisor
+     * @return the smallest (closest to negative infinity)
+     * {@code long} value that is greater than or equal to the algebraic quotient.
+     * @throws ArithmeticException if the divisor {@code y} is zero
+     * @see Math#ceilDiv(long, long)
+     * @see Math#ceil(double)
+     * @since 18
+     */
+    @Pure
+    @StaticallyExecutable
+    public static long ceilDiv(long x, long y) {
+        return Math.ceilDiv(x, y);
+    }
+
+    /**
+     * Returns the ceiling modulus of the {@code int} arguments.
+     * <p>
+     * The ceiling modulus is {@code r = x - (ceilDiv(x, y) * y)},
+     * has the opposite sign as the divisor {@code y} or is zero, and
+     * is in the range of {@code -abs(y) < r < +abs(y)}.
+     *
+     * <p>
+     * The relationship between {@code ceilDiv} and {@code ceilMod} is such that:
+     * <ul>
+     *   <li>{@code ceilDiv(x, y) * y + ceilMod(x, y) == x}</li>
+     * </ul>
+     * <p>
+     * See {@link Math#ceilMod(int, int) Math.ceilMod} for examples and
+     * a comparison to the {@code %} operator.
+     *
+     * @param x the dividend
+     * @param y the divisor
+     * @return the ceiling modulus {@code x - (ceilDiv(x, y) * y)}
+     * @throws ArithmeticException if the divisor {@code y} is zero
+     * @see Math#ceilMod(int, int)
+     * @see StrictMath#ceilDiv(int, int)
+     * @since 18
+     */
+    @Pure
+    @StaticallyExecutable
+    public static int ceilMod(int x, int y) {
+        return Math.ceilMod(x , y);
+    }
+
+    /**
+     * Returns the ceiling modulus of the {@code long} and {@code int} arguments.
+     * <p>
+     * The ceiling modulus is {@code r = x - (ceilDiv(x, y) * y)},
+     * has the opposite sign as the divisor {@code y} or is zero, and
+     * is in the range of {@code -abs(y) < r < +abs(y)}.
+     *
+     * <p>
+     * The relationship between {@code ceilDiv} and {@code ceilMod} is such that:
+     * <ul>
+     *   <li>{@code ceilDiv(x, y) * y + ceilMod(x, y) == x}</li>
+     * </ul>
+     * <p>
+     * See {@link Math#ceilMod(int, int) Math.ceilMod} for examples and
+     * a comparison to the {@code %} operator.
+     *
+     * @param x the dividend
+     * @param y the divisor
+     * @return the ceiling modulus {@code x - (ceilDiv(x, y) * y)}
+     * @throws ArithmeticException if the divisor {@code y} is zero
+     * @see Math#ceilMod(long, int)
+     * @see StrictMath#ceilDiv(long, int)
+     * @since 18
+     */
+    @Pure
+    @StaticallyExecutable
+    public static int ceilMod(long x, int y) {
+        return Math.ceilMod(x , y);
+    }
+
+    /**
+     * Returns the ceiling modulus of the {@code long} arguments.
+     * <p>
+     * The ceiling modulus is {@code r = x - (ceilDiv(x, y) * y)},
+     * has the opposite sign as the divisor {@code y} or is zero, and
+     * is in the range of {@code -abs(y) < r < +abs(y)}.
+     *
+     * <p>
+     * The relationship between {@code ceilDiv} and {@code ceilMod} is such that:
+     * <ul>
+     *   <li>{@code ceilDiv(x, y) * y + ceilMod(x, y) == x}</li>
+     * </ul>
+     * <p>
+     * See {@link Math#ceilMod(int, int) Math.ceilMod} for examples and
+     * a comparison to the {@code %} operator.
+     *
+     * @param x the dividend
+     * @param y the divisor
+     * @return the ceiling modulus {@code x - (ceilDiv(x, y) * y)}
+     * @throws ArithmeticException if the divisor {@code y} is zero
+     * @see Math#ceilMod(long, long)
+     * @see StrictMath#ceilDiv(long, long)
+     * @since 18
+     */
+    @Pure
+    @StaticallyExecutable
+    public static long ceilMod(long x, long y) {
+        return Math.ceilMod(x, y);
     }
 
     /**
@@ -1170,6 +1666,8 @@ public final @UsesObjectEquals class StrictMath {
      * @return  the absolute value of the argument.
      * @see Math#absExact(int)
      */
+    @Pure
+    @StaticallyExecutable
     public static int abs(int a) {
         return Math.abs(a);
     }
@@ -1194,6 +1692,7 @@ public final @UsesObjectEquals class StrictMath {
      * @since 15
      */
     @Pure
+    @StaticallyExecutable
     public static int absExact(int a) {
         return Math.absExact(a);
     }
@@ -1213,6 +1712,8 @@ public final @UsesObjectEquals class StrictMath {
      * @return  the absolute value of the argument.
      * @see Math#absExact(long)
      */
+    @Pure
+    @StaticallyExecutable
     public static long abs(long a) {
         return Math.abs(a);
     }
@@ -1237,6 +1738,7 @@ public final @UsesObjectEquals class StrictMath {
      * @since 15
      */
     @Pure
+    @StaticallyExecutable
     public static long absExact(long a) {
         return Math.absExact(a);
     }
@@ -1261,6 +1763,8 @@ public final @UsesObjectEquals class StrictMath {
      * @param   a   the argument whose absolute value is to be determined
      * @return  the absolute value of the argument.
      */
+    @Pure
+    @StaticallyExecutable
     public static float abs(float a) {
         return Math.abs(a);
     }
@@ -1285,6 +1789,8 @@ public final @UsesObjectEquals class StrictMath {
      * @param   a   the argument whose absolute value is to be determined
      * @return  the absolute value of the argument.
      */
+    @Pure
+    @StaticallyExecutable
     public static double abs(double a) {
         return Math.abs(a);
     }
@@ -1440,6 +1946,103 @@ public final @UsesObjectEquals class StrictMath {
     }
 
     /**
+     * Clamps the value to fit between min and max. If the value is less
+     * than {@code min}, then {@code min} is returned. If the value is greater
+     * than {@code max}, then {@code max} is returned. Otherwise, the original
+     * value is returned.
+     * <p>
+     * While the original value of type long may not fit into the int type,
+     * the bounds have the int type, so the result always fits the int type.
+     * This allows to use method to safely cast long value to int with
+     * saturation.
+     *
+     * @param value value to clamp
+     * @param min minimal allowed value
+     * @param max maximal allowed value
+     * @return a clamped value that fits into {@code min..max} interval
+     * @throws IllegalArgumentException if {@code min > max}
+     *
+     * @since 21
+     */
+    @Pure
+    @StaticallyExecutable
+    public static int clamp(long value, int min, int max) {
+        return Math.clamp(value, min, max);
+    }
+
+    /**
+     * Clamps the value to fit between min and max. If the value is less
+     * than {@code min}, then {@code min} is returned. If the value is greater
+     * than {@code max}, then {@code max} is returned. Otherwise, the original
+     * value is returned.
+     *
+     * @param value value to clamp
+     * @param min minimal allowed value
+     * @param max maximal allowed value
+     * @return a clamped value that fits into {@code min..max} interval
+     * @throws IllegalArgumentException if {@code min > max}
+     *
+     * @since 21
+     */
+    @Pure
+    @StaticallyExecutable
+    public static long clamp(long value, long min, long max) {
+        return Math.clamp(value, min, max);
+    }
+
+    /**
+     * Clamps the value to fit between min and max. If the value is less
+     * than {@code min}, then {@code min} is returned. If the value is greater
+     * than {@code max}, then {@code max} is returned. Otherwise, the original
+     * value is returned. If value is NaN, the result is also NaN.
+     * <p>
+     * Unlike the numerical comparison operators, this method considers
+     * negative zero to be strictly smaller than positive zero.
+     * E.g., {@code clamp(-0.0, 0.0, 1.0)} returns 0.0.
+     *
+     * @param value value to clamp
+     * @param min minimal allowed value
+     * @param max maximal allowed value
+     * @return a clamped value that fits into {@code min..max} interval
+     * @throws IllegalArgumentException if either of {@code min} and {@code max}
+     * arguments is NaN, or {@code min > max}, or {@code min} is +0.0, and
+     * {@code max} is -0.0.
+     *
+     * @since 21
+     */
+    @Pure
+    @StaticallyExecutable
+    public static double clamp(double value, double min, double max) {
+        return Math.clamp(value, min, max);
+    }
+
+    /**
+     * Clamps the value to fit between min and max. If the value is less
+     * than {@code min}, then {@code min} is returned. If the value is greater
+     * than {@code max}, then {@code max} is returned. Otherwise, the original
+     * value is returned. If value is NaN, the result is also NaN.
+     * <p>
+     * Unlike the numerical comparison operators, this method considers
+     * negative zero to be strictly smaller than positive zero.
+     * E.g., {@code clamp(-0.0f, 0.0f, 1.0f)} returns 0.0f.
+     *
+     * @param value value to clamp
+     * @param min minimal allowed value
+     * @param max maximal allowed value
+     * @return a clamped value that fits into {@code min..max} interval
+     * @throws IllegalArgumentException if either of {@code min} and {@code max}
+     * arguments is NaN, or {@code min > max}, or {@code min} is +0.0f, and
+     * {@code max} is -0.0f.
+     *
+     * @since 21
+     */
+    @Pure
+    @StaticallyExecutable
+    public static float clamp(float value, float min, float max) {
+        return Math.clamp(value, min, max);
+    }
+
+    /**
      * Returns the fused multiply add of the three arguments; that is,
      * returns the exact product of the first two arguments summed
      * with the third argument and then rounded once to the nearest
@@ -1489,6 +2092,8 @@ public final @UsesObjectEquals class StrictMath {
      *
      * @since 9
      */
+    @Pure
+    @StaticallyExecutable
     public static double fma(double a, double b, double c) {
         return Math.fma(a, b, c);
     }
@@ -1543,6 +2148,8 @@ public final @UsesObjectEquals class StrictMath {
      *
      * @since 9
      */
+    @Pure
+    @StaticallyExecutable
     public static float fma(float a, float b, float c) {
         return Math.fma(a, b, c);
     }
@@ -1570,6 +2177,8 @@ public final @UsesObjectEquals class StrictMath {
      * @author Joseph D. Darcy
      * @since 1.5
      */
+    @Pure
+    @StaticallyExecutable
     public static double ulp(double d) {
         return Math.ulp(d);
     }
@@ -1597,6 +2206,8 @@ public final @UsesObjectEquals class StrictMath {
      * @author Joseph D. Darcy
      * @since 1.5
      */
+    @Pure
+    @StaticallyExecutable
     public static float ulp(float f) {
         return Math.ulp(f);
     }
@@ -1618,6 +2229,8 @@ public final @UsesObjectEquals class StrictMath {
      * @author Joseph D. Darcy
      * @since 1.5
      */
+    @Pure
+    @StaticallyExecutable
     public static double signum(double d) {
         return Math.signum(d);
     }
@@ -1639,6 +2252,8 @@ public final @UsesObjectEquals class StrictMath {
      * @author Joseph D. Darcy
      * @since 1.5
      */
+    @Pure
+    @StaticallyExecutable
     public static float signum(float f) {
         return Math.signum(f);
     }
@@ -1666,7 +2281,11 @@ public final @UsesObjectEquals class StrictMath {
      * @return  The hyperbolic sine of {@code x}.
      * @since 1.5
      */
-    public static native double sinh(double x);
+    @Pure
+    @StaticallyExecutable
+    public static double sinh(double x) {
+        return FdLibm.Sinh.compute(x);
+    }
 
     /**
      * Returns the hyperbolic cosine of a {@code double} value.
@@ -1690,7 +2309,11 @@ public final @UsesObjectEquals class StrictMath {
      * @return  The hyperbolic cosine of {@code x}.
      * @since 1.5
      */
-    public static native double cosh(double x);
+    @Pure
+    @StaticallyExecutable
+    public static double cosh(double x) {
+        return FdLibm.Cosh.compute(x);
+    }
 
     /**
      * Returns the hyperbolic tangent of a {@code double} value.
@@ -1721,7 +2344,11 @@ public final @UsesObjectEquals class StrictMath {
      * @return  The hyperbolic tangent of {@code x}.
      * @since 1.5
      */
-    public static native double tanh(double x);
+    @Pure
+    @StaticallyExecutable
+    public static double tanh(double x) {
+        return FdLibm.Tanh.compute(x);
+    }
 
     /**
      * Returns sqrt(<i>x</i><sup>2</sup>&nbsp;+<i>y</i><sup>2</sup>)
@@ -1745,6 +2372,8 @@ public final @UsesObjectEquals class StrictMath {
      * without intermediate overflow or underflow
      * @since 1.5
      */
+    @Pure
+    @StaticallyExecutable
     public static double hypot(double x, double y) {
         return FdLibm.Hypot.compute(x, y);
     }
@@ -1775,7 +2404,11 @@ public final @UsesObjectEquals class StrictMath {
      * @return  the value <i>e</i><sup>{@code x}</sup>&nbsp;-&nbsp;1.
      * @since 1.5
      */
-    public static native double expm1(double x);
+    @Pure
+    @StaticallyExecutable
+    public static double expm1(double x) {
+        return FdLibm.Expm1.compute(x);
+    }
 
     /**
      * Returns the natural logarithm of the sum of the argument and 1.
@@ -1806,7 +2439,11 @@ public final @UsesObjectEquals class StrictMath {
      * log of {@code x}&nbsp;+&nbsp;1
      * @since 1.5
      */
-    public static native double log1p(double x);
+    @Pure
+    @StaticallyExecutable
+    public static double log1p(double x) {
+        return FdLibm.Log1p.compute(x);
+    }
 
     /**
      * Returns the first floating-point argument with the sign of the
@@ -1820,6 +2457,8 @@ public final @UsesObjectEquals class StrictMath {
      * and the sign of {@code sign}.
      * @since 1.6
      */
+    @Pure
+    @StaticallyExecutable
     public static double copySign(double magnitude, double sign) {
         return Math.copySign(magnitude, (Double.isNaN(sign)?1.0d:sign));
     }
@@ -1836,6 +2475,8 @@ public final @UsesObjectEquals class StrictMath {
      * and the sign of {@code sign}.
      * @since 1.6
      */
+    @Pure
+    @StaticallyExecutable
     public static float copySign(float magnitude, float sign) {
         return Math.copySign(magnitude, (Float.isNaN(sign)?1.0f:sign));
     }
@@ -1853,6 +2494,8 @@ public final @UsesObjectEquals class StrictMath {
      * @return the unbiased exponent of the argument
      * @since 1.6
      */
+    @Pure
+    @StaticallyExecutable
     public static int getExponent(float f) {
         return Math.getExponent(f);
     }
@@ -1871,6 +2514,8 @@ public final @UsesObjectEquals class StrictMath {
      * @return the unbiased exponent of the argument
      * @since 1.6
      */
+    @Pure
+    @StaticallyExecutable
     public static int getExponent(double d) {
         return Math.getExponent(d);
     }
@@ -1914,6 +2559,8 @@ public final @UsesObjectEquals class StrictMath {
      * direction of {@code direction}.
      * @since 1.6
      */
+    @Pure
+    @StaticallyExecutable
     public static double nextAfter(double start, double direction) {
         return Math.nextAfter(start, direction);
     }
@@ -1956,6 +2603,8 @@ public final @UsesObjectEquals class StrictMath {
      * direction of {@code direction}.
      * @since 1.6
      */
+    @Pure
+    @StaticallyExecutable
     public static float nextAfter(float start, double direction) {
         return Math.nextAfter(start, direction);
     }
@@ -1985,6 +2634,8 @@ public final @UsesObjectEquals class StrictMath {
      * infinity.
      * @since 1.6
      */
+    @Pure
+    @StaticallyExecutable
     public static double nextUp(double d) {
         return Math.nextUp(d);
     }
@@ -2014,6 +2665,8 @@ public final @UsesObjectEquals class StrictMath {
      * infinity.
      * @since 1.6
      */
+    @Pure
+    @StaticallyExecutable
     public static float nextUp(float f) {
         return Math.nextUp(f);
     }
@@ -2043,6 +2696,8 @@ public final @UsesObjectEquals class StrictMath {
      * infinity.
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static double nextDown(double d) {
         return Math.nextDown(d);
     }
@@ -2072,6 +2727,8 @@ public final @UsesObjectEquals class StrictMath {
      * infinity.
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static float nextDown(float f) {
         return Math.nextDown(f);
     }
@@ -2103,6 +2760,8 @@ public final @UsesObjectEquals class StrictMath {
      * @return {@code d} &times; 2<sup>{@code scaleFactor}</sup>
      * @since 1.6
      */
+    @Pure
+    @StaticallyExecutable
     public static double scalb(double d, int scaleFactor) {
         return Math.scalb(d, scaleFactor);
     }
@@ -2134,6 +2793,8 @@ public final @UsesObjectEquals class StrictMath {
      * @return {@code f} &times; 2<sup>{@code scaleFactor}</sup>
      * @since 1.6
      */
+    @Pure
+    @StaticallyExecutable
     public static float scalb(float f, int scaleFactor) {
         return Math.scalb(f, scaleFactor);
     }

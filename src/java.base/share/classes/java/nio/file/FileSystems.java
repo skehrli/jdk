@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,6 +27,7 @@ package java.nio.file;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.nio.file.spi.FileSystemProvider;
 import java.net.URI;
@@ -89,7 +90,7 @@ import sun.nio.fs.DefaultFileSystemProvider;
  * @since 1.7
  */
 
-@AnnotatedFor({"interning"})
+@AnnotatedFor({"interning", "nullness"})
 public final @UsesObjectEquals class FileSystems {
     private FileSystems() { }
 
@@ -259,10 +260,10 @@ public final @UsesObjectEquals class FileSystems {
      * <p> <b>Usage Example:</b>
      * Suppose there is a provider identified by the scheme {@code "memory"}
      * installed:
-     * <pre>
-     *  FileSystem fs = FileSystems.newFileSystem(URI.create("memory:///?name=logfs"),
-     *                                            Map.of("capacity", "16G", "blockSize", "4k"));
-     * </pre>
+     * {@snippet lang=java :
+     *     FileSystem fs = FileSystems.newFileSystem(URI.create("memory:///?name=logfs"),
+     *                                               Map.of("capacity", "16G", "blockSize", "4k"));
+     * }
      *
      * @param   uri
      *          the URI identifying the file system
@@ -331,7 +332,7 @@ public final @UsesObjectEquals class FileSystems {
      *          if a security manager is installed and it denies an unspecified
      *          permission required by the file system provider implementation
      */
-    public static FileSystem newFileSystem(URI uri, Map<String,?> env, ClassLoader loader)
+    public static FileSystem newFileSystem(URI uri, Map<String,?> env, @Nullable ClassLoader loader)
         throws IOException
     {
         String scheme = uri.getScheme();
@@ -398,7 +399,7 @@ public final @UsesObjectEquals class FileSystems {
      *          permission
      */
     public static FileSystem newFileSystem(Path path,
-                                           ClassLoader loader)
+                                           @Nullable ClassLoader loader)
         throws IOException
     {
         return newFileSystem(path, Map.of(), loader);
@@ -521,7 +522,7 @@ public final @UsesObjectEquals class FileSystems {
      * @since 13
      */
     public static FileSystem newFileSystem(Path path, Map<String,?> env,
-                                           ClassLoader loader)
+                                           @Nullable ClassLoader loader)
         throws IOException
     {
         if (path == null)

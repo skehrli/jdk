@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,10 +25,10 @@
 
 package java.util;
 
+import org.checkerframework.checker.index.qual.CanShrink;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.index.qual.PolyGrowShrink;
-import org.checkerframework.checker.index.qual.Shrinkable;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
@@ -43,9 +43,10 @@ import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -449,6 +450,7 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
     }
 
     @SuppressWarnings("unchecked")
+    @Pure
     static <E> E elementAt(Object[] es, int index) {
         return (E) es[index];
     }
@@ -467,6 +469,39 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * @throws NoSuchElementException {@inheritDoc}
+     * @since 21
+     */
+    @EnsuresNonEmpty("this")
+    @Pure
+    public E getFirst() {
+        if (size == 0) {
+            throw new NoSuchElementException();
+        } else {
+            return elementData(0);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @throws NoSuchElementException {@inheritDoc}
+     * @since 21
+     */
+    @EnsuresNonEmpty("this")
+    @Pure
+    public E getLast() {
+        int last = size - 1;
+        if (last < 0) {
+            throw new NoSuchElementException();
+        } else {
+            return elementData(last);
+        }
+    }
+
+    /**
      * Replaces the element at the specified position in this list with
      * the specified element.
      *
@@ -475,7 +510,9 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
      * @return the element previously at the specified position
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    @SideEffectsOnly("this")
+    @EnsuresNonEmpty("this")
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public E set(@GuardSatisfied ArrayList<E> this, @NonNegative int index, E element) {
         Objects.checkIndex(index, size);
         E oldValue = elementData(index);
@@ -488,7 +525,8 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
      * bytecode size under 35 (the -XX:MaxInlineSize default value),
      * which helps when add(E) is called in a C1-compiled loop.
      */
-    @SideEffectsOnly("this")
+    @EnsuresNonEmpty("this")
+    // @SideEffectsOnly("this")
     private void add(E e, Object[] elementData, int s) {
         if (s == elementData.length)
             elementData = grow();
@@ -502,8 +540,9 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
      * @param e element to be appended to this list
      * @return {@code true} (as specified by {@link Collection#add})
      */
-    @SideEffectsOnly("this")
     @EnsuresNonEmpty("this")
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean add(@GuardSatisfied ArrayList<E> this, E e) {
         modCount++;
         add(e, elementData, size);
@@ -519,7 +558,9 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
      * @param element element to be inserted
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    @SideEffectsOnly("this")
+    @EnsuresNonEmpty("this")
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public void add(@GuardSatisfied ArrayList<E> this, @NonNegative int index, E element) {
         rangeCheckForAdd(index);
         modCount++;
@@ -535,6 +576,30 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * @since 21
+     */
+    @EnsuresNonEmpty("this")
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public void addFirst(E element) {
+        add(0, element);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @since 21
+     */
+    @EnsuresNonEmpty("this")
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public void addLast(E element) {
+        add(element);
+    }
+
+    /**
      * Removes the element at the specified position in this list.
      * Shifts any subsequent elements to the left (subtracts one from their
      * indices).
@@ -543,7 +608,9 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
      * @return the element that was removed from the list
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public E remove(@GuardSatisfied @Shrinkable ArrayList<E> this, @NonNegative int index) {
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public E remove(@GuardSatisfied @CanShrink ArrayList<E> this, @NonNegative int index) {
         Objects.checkIndex(index, size);
         final Object[] es = elementData;
 
@@ -551,6 +618,45 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
         fastRemove(es, index);
 
         return oldValue;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @throws NoSuchElementException {@inheritDoc}
+     * @since 21
+     */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public E removeFirst() {
+        if (size == 0) {
+            throw new NoSuchElementException();
+        } else {
+            Object[] es = elementData;
+            @SuppressWarnings("unchecked") E oldValue = (E) es[0];
+            fastRemove(es, 0);
+            return oldValue;
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @throws NoSuchElementException {@inheritDoc}
+     * @since 21
+     */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public E removeLast() {
+        int last = size - 1;
+        if (last < 0) {
+            throw new NoSuchElementException();
+        } else {
+            Object[] es = elementData;
+            @SuppressWarnings("unchecked") E oldValue = (E) es[last];
+            fastRemove(es, last);
+            return oldValue;
+        }
     }
 
     /**
@@ -622,6 +728,7 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
     /**
      * {@inheritDoc}
      */
+    @Pure
     public int hashCode() {
         int expectedModCount = modCount;
         int hash = hashCodeRange(0, size);
@@ -655,7 +762,9 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
      * @param o element to be removed from this list, if present
      * @return {@code true} if this list contained the specified element
      */
-    public boolean remove(@GuardSatisfied @Shrinkable ArrayList<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean remove(@GuardSatisfied @CanShrink ArrayList<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         final Object[] es = elementData;
         final int size = this.size;
         int i = 0;
@@ -691,7 +800,9 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
      * Removes all of the elements from this list.  The list will
      * be empty after this call returns.
      */
-    public void clear(@GuardSatisfied @Shrinkable ArrayList<E> this) {
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public void clear(@GuardSatisfied @CanShrink ArrayList<E> this) {
         modCount++;
         final Object[] es = elementData;
         for (int to = size, i = size = 0; i < to; i++)
@@ -711,7 +822,8 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
      * @return {@code true} if this list changed as a result of the call
      * @throws NullPointerException if the specified collection is null
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean addAll(@GuardSatisfied ArrayList<E> this, Collection<? extends E> c) {
         Object[] a = c.toArray();
         modCount++;
@@ -742,7 +854,8 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
      * @throws IndexOutOfBoundsException {@inheritDoc}
      * @throws NullPointerException if the specified collection is null
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean addAll(@GuardSatisfied ArrayList<E> this, @NonNegative int index, Collection<? extends E> c) {
         rangeCheckForAdd(index);
 
@@ -779,7 +892,7 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
      *          toIndex > size() ||
      *          toIndex < fromIndex})
      */
-    protected void removeRange(@GuardSatisfied @Shrinkable ArrayList<E> this, int fromIndex, int toIndex) {
+    protected void removeRange(@GuardSatisfied @CanShrink ArrayList<E> this, int fromIndex, int toIndex) {
         if (fromIndex > toIndex) {
             throw new IndexOutOfBoundsException(
                     outOfBoundsMsg(fromIndex, toIndex));
@@ -834,7 +947,9 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
      *         or if the specified collection is null
      * @see Collection#contains(Object)
      */
-    public boolean removeAll(@Shrinkable ArrayList<E> this, Collection<? extends @UnknownSignedness Object> c) {
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean removeAll(@CanShrink ArrayList<E> this, Collection<? extends @UnknownSignedness Object> c) {
         return batchRemove(c, false, 0, size);
     }
 
@@ -854,7 +969,9 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
      *         or if the specified collection is null
      * @see Collection#contains(Object)
      */
-    public boolean retainAll(@GuardSatisfied @Shrinkable ArrayList<E> this, Collection<? extends @UnknownSignedness Object> c) {
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean retainAll(@GuardSatisfied @CanShrink ArrayList<E> this, Collection<? extends @UnknownSignedness Object> c) {
         return batchRemove(c, true, 0, size);
     }
 
@@ -1013,7 +1130,8 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
         }
 
         @SuppressWarnings("unchecked")
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E next(@NonEmpty Itr this) {
             checkForComodification();
             int i = cursor;
@@ -1026,6 +1144,8 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
             return (E) elementData[lastRet = i];
         }
 
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void remove() {
             if (lastRet < 0)
                 throw new IllegalStateException();
@@ -1075,19 +1195,28 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
             cursor = index;
         }
 
+        @Pure
         public boolean hasPrevious() {
             return cursor != 0;
         }
 
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        @Pure
         public int nextIndex() {
             return cursor;
         }
 
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        @Pure
         public int previousIndex() {
             return cursor - 1;
         }
 
         @SuppressWarnings("unchecked")
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E previous() {
             checkForComodification();
             int i = cursor - 1;
@@ -1100,6 +1229,8 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
             return (E) elementData[lastRet = i];
         }
 
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void set(E e) {
             if (lastRet < 0)
                 throw new IllegalStateException();
@@ -1112,6 +1243,9 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
             }
         }
 
+        @EnsuresNonEmpty("this")
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void add(E e) {
             checkForComodification();
 
@@ -1156,6 +1290,9 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
      * @throws IndexOutOfBoundsException {@inheritDoc}
      * @throws IllegalArgumentException {@inheritDoc}
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    @SideEffectFree
     public @PolyGrowShrink List<E> subList(@GuardSatisfied @PolyGrowShrink ArrayList<E> this, @NonNegative int fromIndex, @NonNegative int toIndex) {
         subListRangeCheck(fromIndex, toIndex, size);
         return new SubList<>(this, fromIndex, toIndex);
@@ -1189,6 +1326,9 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
             this.modCount = parent.modCount;
         }
 
+        @EnsuresNonEmpty("this")
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E set(@NonNegative int index, E element) {
             Objects.checkIndex(index, size);
             checkForComodification();
@@ -1197,6 +1337,7 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
             return oldValue;
         }
 
+        @Pure
         public E get(@NonNegative int index) {
             Objects.checkIndex(index, size);
             checkForComodification();
@@ -1209,6 +1350,9 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
             return size;
         }
 
+        @EnsuresNonEmpty("this")
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void add(@NonNegative int index, E element) {
             rangeCheckForAdd(index);
             checkForComodification();
@@ -1216,6 +1360,8 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
             updateSizeAndModCount(1);
         }
 
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E remove(@NonNegative int index) {
             Objects.checkIndex(index, size);
             checkForComodification();
@@ -1224,16 +1370,22 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
             return result;
         }
 
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         protected void removeRange(int fromIndex, int toIndex) {
             checkForComodification();
             root.removeRange(offset + fromIndex, offset + toIndex);
             updateSizeAndModCount(fromIndex - toIndex);
         }
 
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean addAll(Collection<? extends E> c) {
             return addAll(this.size, c);
         }
 
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean addAll(@NonNegative int index, Collection<? extends E> c) {
             rangeCheckForAdd(index);
             int cSize = c.size();
@@ -1245,14 +1397,19 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
             return true;
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public void replaceAll(UnaryOperator<E> operator) {
             root.replaceAllRange(operator, offset, offset + size);
         }
 
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
             return batchRemove(c, false);
         }
 
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
             return batchRemove(c, true);
         }
@@ -1267,6 +1424,8 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
             return modified;
         }
 
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean removeIf(Predicate<? super E> filter) {
             checkForComodification();
             int oldSize = root.size;
@@ -1276,6 +1435,7 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
             return modified;
         }
 
+        @SideEffectFree
         public @PolyNull @PolySigned Object[] toArray(SubList<@PolyNull @PolySigned E> this) {
             checkForComodification();
             return Arrays.copyOfRange(root.elementData, offset, offset + size);
@@ -1293,6 +1453,7 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
             return a;
         }
 
+        @Pure
         public boolean equals(@Nullable Object o) {
             if (o == this) {
                 return true;
@@ -1307,24 +1468,28 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
             return equal;
         }
 
+        @Pure
         public int hashCode() {
             int hash = root.hashCodeRange(offset, offset + size);
             checkForComodification();
             return hash;
         }
 
+        @Pure
         public int indexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
             int index = root.indexOfRange(o, offset, offset + size);
             checkForComodification();
             return index >= 0 ? index - offset : -1;
         }
 
+        @Pure
         public int lastIndexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
             int index = root.lastIndexOfRange(o, offset, offset + size);
             checkForComodification();
             return index >= 0 ? index - offset : -1;
         }
 
+        @Pure
         @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@Nullable @UnknownSignedness Object o) {
             return indexOf(o) >= 0;
@@ -1351,7 +1516,7 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
                 }
 
                 @SuppressWarnings("unchecked")
-                @SideEffectsOnly("this")
+                // @SideEffectsOnly("this")
                 public E next(/*@NonEmpty ListIterator<E> this*/) {
                     checkForComodification();
                     int i = cursor;
@@ -1364,6 +1529,7 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
                     return (E) elementData[offset + (lastRet = i)];
                 }
 
+                @Pure
                 public boolean hasPrevious() {
                     return cursor != 0;
                 }
@@ -1398,10 +1564,12 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
                     }
                 }
 
+                @Pure
                 public int nextIndex() {
                     return cursor;
                 }
 
+                @Pure
                 public int previousIndex() {
                     return cursor - 1;
                 }
@@ -1454,6 +1622,7 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
             };
         }
 
+        @SideEffectFree
         public List<E> subList(int fromIndex, int toIndex) {
             subListRangeCheck(fromIndex, toIndex, size);
             return new SubList<>(this, fromIndex, toIndex);
@@ -1561,6 +1730,7 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
      * @throws NullPointerException {@inheritDoc}
      */
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public void forEach(Consumer<? super E> action) {
         Objects.requireNonNull(action);
         final int expectedModCount = modCount;
@@ -1716,7 +1886,9 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
      * @throws NullPointerException {@inheritDoc}
      */
     @Override
-    public boolean removeIf(@Shrinkable ArrayList<E> this, Predicate<? super E> filter) {
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean removeIf(@CanShrink ArrayList<E> this, Predicate<? super E> filter) {
         return removeIf(filter, 0, size);
     }
 
@@ -1724,7 +1896,7 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
      * Removes all elements satisfying the given predicate, from index
      * i (inclusive) to index end (exclusive).
      */
-    boolean removeIf(@Shrinkable ArrayList<E> this, Predicate<? super E> filter, int i, final int end) {
+    boolean removeIf(@CanShrink ArrayList<E> this, Predicate<? super E> filter, int i, final int end) {
         Objects.requireNonNull(filter);
         int expectedModCount = modCount;
         final Object[] es = elementData;
@@ -1759,6 +1931,7 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
 
     @SuppressWarnings({"unchecked"})
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public void replaceAll(UnaryOperator<E> operator) {
         replaceAllRange(operator, 0, size);
         // TODO(8203662): remove increment of modCount from ...
@@ -1777,6 +1950,8 @@ public class ArrayList<E extends @MustCallUnknown Object> extends AbstractList<E
 
     @Override
     @SuppressWarnings("unchecked")
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public void sort(Comparator<? super E> c) {
         final int expectedModCount = modCount;
         Arrays.sort((E[]) elementData, 0, size, c);

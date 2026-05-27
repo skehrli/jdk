@@ -22,6 +22,8 @@
  */
 package com.sun.org.apache.xml.internal.security.keys.keyresolver;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.lang.reflect.InvocationTargetException;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
@@ -30,9 +32,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
@@ -172,8 +171,8 @@ public class KeyResolver {
             ClassNotFoundException, IllegalAccessException,
             InstantiationException, InvocationTargetException {
         JavaUtils.checkRegisterPermission();
-        KeyResolverSpi keyResolverSpi =
-            (KeyResolverSpi) JavaUtils.newInstanceWithEmptyConstructor(ClassLoaderUtils.loadClass(className, KeyResolver.class));
+        KeyResolverSpi keyResolverSpi = (KeyResolverSpi)
+            JavaUtils.newInstanceWithEmptyConstructor(ClassLoaderUtils.loadClass(className, KeyResolver.class));
         register(keyResolverSpi, false);
     }
 
@@ -195,8 +194,8 @@ public class KeyResolver {
         KeyResolverSpi keyResolverSpi = null;
         Exception ex = null;
         try {
-            keyResolverSpi = (KeyResolverSpi) JavaUtils.newInstanceWithEmptyConstructor(
-                    ClassLoaderUtils.loadClass(className, KeyResolver.class));
+            keyResolverSpi = (KeyResolverSpi)
+                JavaUtils.newInstanceWithEmptyConstructor(ClassLoaderUtils.loadClass(className, KeyResolver.class));
             register(keyResolverSpi, true);
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | InvocationTargetException e) {
             ex = e;
@@ -255,8 +254,8 @@ public class KeyResolver {
         JavaUtils.checkRegisterPermission();
         List<KeyResolverSpi> keyResolverList = new ArrayList<>(classNames.size());
         for (String className : classNames) {
-            KeyResolverSpi keyResolverSpi = (KeyResolverSpi)JavaUtils
-                    .newInstanceWithEmptyConstructor(ClassLoaderUtils.loadClass(className, KeyResolver.class));
+            KeyResolverSpi keyResolverSpi = (KeyResolverSpi)
+                JavaUtils.newInstanceWithEmptyConstructor(ClassLoaderUtils.loadClass(className, KeyResolver.class));
             keyResolverList.add(keyResolverSpi);
         }
         resolverList.addAll(keyResolverList);
@@ -302,7 +301,6 @@ public class KeyResolver {
             return it.hasNext();
         }
 
-        @SideEffectsOnly("this")
         public KeyResolverSpi next() {
             KeyResolverSpi resolver = it.next();
             if (resolver == null) {

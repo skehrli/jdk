@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,8 +29,9 @@ import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 /**
  * An object that implements the Enumeration interface generates a
@@ -55,6 +56,8 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * {@code Iterator} in preference to {@code Enumeration}. It is possible to
  * adapt an {@code Enumeration} to an {@code Iterator} by using the
  * {@link #asIterator} method.
+ *
+ * @param <E> the type of elements returned by this enumeration
  *
  * @see     java.util.Iterator
  * @see     java.io.SequenceInputStream
@@ -131,7 +134,8 @@ public interface Enumeration<E> {
             @Override public boolean hasNext() {
                 return hasMoreElements();
             }
-            @SideEffectsOnly("this")
+            // @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
             @Override public E next(/*@NonEmpty Iterator<E> this*/) {
                 return nextElement();
             }

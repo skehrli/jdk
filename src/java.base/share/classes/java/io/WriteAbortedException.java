@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,17 +26,19 @@
 package java.io;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
  * Signals that one of the ObjectStreamExceptions was thrown during a
  * write operation.  Thrown during a read operation when one of the
  * ObjectStreamExceptions was thrown during a write operation.  The
  * exception that terminated the write can be found in the detail
- * field. The stream is reset to it's initial state and all references
+ * field. The stream is reset to its initial state and all references
  * to objects already deserialized are discarded.
  *
  * @since   1.1
  */
+@AnnotatedFor({"nullness"})
 public class WriteAbortedException extends ObjectStreamException {
     @java.io.Serial
     private static final long serialVersionUID = -3326426625597282442L;
@@ -51,7 +53,7 @@ public class WriteAbortedException extends ObjectStreamException {
      * @serial
      */
     @Deprecated(since="17")
-    public Exception detail;
+    public @Nullable Exception detail;
 
     /**
      * Constructs a WriteAbortedException with a string describing
@@ -59,7 +61,7 @@ public class WriteAbortedException extends ObjectStreamException {
      * @param s   String describing the exception.
      * @param ex  Exception causing the abort.
      */
-    public WriteAbortedException(String s, Exception ex) {
+    public WriteAbortedException(@Nullable String s, @Nullable Exception ex) {
         super(s);
         initCause(null);  // Disallow subsequent initCause
         detail = ex;

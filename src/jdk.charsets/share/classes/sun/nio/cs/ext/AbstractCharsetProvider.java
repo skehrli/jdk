@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,8 +26,6 @@
 package sun.nio.cs.ext;
 
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
-
 
 import java.lang.ref.SoftReference;
 import java.nio.charset.Charset;
@@ -35,7 +33,6 @@ import java.nio.charset.spi.CharsetProvider;
 import java.util.ArrayList;
 import java.util.TreeMap;
 import java.util.Iterator;
-import java.util.Locale;
 import java.util.Map;
 
 
@@ -79,14 +76,6 @@ public class AbstractCharsetProvider
         packagePrefix = pkgPrefixName.concat(".");
     }
 
-    /* Add an entry to the given map, but only if no mapping yet exists
-     * for the given name.
-     */
-    private static <K,V> void put(Map<K,V> m, K name, V value) {
-        if (!m.containsKey(name))
-            m.put(name, value);
-    }
-
     private static <K,V> void remove(Map<K,V> m, K name) {
         V x  = m.remove(name);
         assert (x != null);
@@ -96,10 +85,10 @@ public class AbstractCharsetProvider
      */
     protected void charset(String name, String className, String[] aliases) {
         synchronized (this) {
-            put(classMap, name, className);
+            classMap.putIfAbsent(name, className);
             for (int i = 0; i < aliases.length; i++)
-                put(aliasMap, aliases[i], name);
-            put(aliasNameMap, name, aliases);
+                aliasMap.putIfAbsent(aliases[i], name);
+            aliasNameMap.putIfAbsent(name, aliases);
             cache.clear();
         }
     }
@@ -188,7 +177,6 @@ public class AbstractCharsetProvider
                     return i.hasNext();
                 }
 
-                @SideEffectsOnly("this")
                 public Charset next() {
                     String csn = i.next();
                     synchronized (AbstractCharsetProvider.this) {

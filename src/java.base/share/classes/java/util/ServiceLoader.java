@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,8 +32,9 @@ import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -733,6 +734,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
         }
 
         @Override
+        @Pure
         public S get() {
             if (factoryMethod != null) {
                 return invokeFactoryMethod();
@@ -832,11 +834,13 @@ public final @UsesObjectEquals class ServiceLoader<S>
         // when running with a security manager.
 
         @Override
+        @Pure
         public int hashCode() {
             return Objects.hash(service, type, acc);
         }
 
         @Override
+        @Pure
         public boolean equals(Object ob) {
             return ob instanceof @SuppressWarnings("unchecked")ProviderImpl<?> that
                     && this.service == that.service
@@ -978,7 +982,8 @@ public final @UsesObjectEquals class ServiceLoader<S>
         }
 
         @Override
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public Provider<T> next(@NonEmpty LayerLookupIterator<T> this) {
             if (!hasNext())
                 throw new NoSuchElementException();
@@ -1299,7 +1304,8 @@ public final @UsesObjectEquals class ServiceLoader<S>
 
         @SuppressWarnings("removal")
         @Override
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public Provider<T> next(@NonEmpty LazyClassPathLookupIterator<T> this) {
             if (acc == null) {
                 return nextService();
@@ -1330,7 +1336,8 @@ public final @UsesObjectEquals class ServiceLoader<S>
                     return (first.hasNext() || second.hasNext());
                 }
                 @Override
-                @SideEffectsOnly("this")
+                // @SideEffectsOnly("this")
+                @DoesNotUnrefineReceiver("modifiability")
                 public Provider<S> next(/*@NonEmpty Iterator<Provider<S>> this*/) {
                     if (first.hasNext()) {
                         return first.next();
@@ -1419,7 +1426,8 @@ public final @UsesObjectEquals class ServiceLoader<S>
             }
 
             @Override
-            @SideEffectsOnly("this")
+            // @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
             public S next(/*@NonEmpty Iterator<S> this*/) {
                 checkReloadCount();
                 S next;
@@ -1611,7 +1619,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
      *   are located in the order that its module descriptor {@linkplain
      *   java.lang.module.ModuleDescriptor.Provides#providers() lists the
      *   providers}. Providers added dynamically by instrumentation agents (see
-     *   {@link java.lang.instrument.Instrumentation#redefineModule redefineModule})
+     *   {@link java.instrument/java.lang.instrument.Instrumentation#redefineModule redefineModule})
      *   are always located after providers declared by the module. </p> </li>
      *
      *   <li> <p> Step 2: Locate providers in unnamed modules. </p>
@@ -1673,6 +1681,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
      * @revised 9
      */
     @CallerSensitive
+    @SuppressWarnings("doclint:reference") // cross-module links
     public static <S> ServiceLoader<S> load(Class<S> service,
                                             @Nullable ClassLoader loader)
     {

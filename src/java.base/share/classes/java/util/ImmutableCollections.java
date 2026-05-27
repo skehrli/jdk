@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,7 +34,8 @@ import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.io.IOException;
 import java.io.InvalidObjectException;
@@ -153,7 +154,7 @@ class ImmutableCollections {
     static UnsupportedOperationException uoe() { return new UnsupportedOperationException(); }
 
     @jdk.internal.ValueBased
-    static abstract class AbstractImmutableCollection<E> extends AbstractCollection<E> {
+    abstract static class AbstractImmutableCollection<E> extends AbstractCollection<E> {
         // all mutating methods throw UnsupportedOperationException
         @Override
         @EnsuresNonEmpty("this")
@@ -179,10 +180,12 @@ class ImmutableCollections {
      */
     @SuppressWarnings("unchecked")
     static <E> List<E> listCopy(Collection<? extends E> coll) {
-        if (coll instanceof List12 || (coll instanceof ListN && ! ((ListN<?>)coll).allowNulls)) {
+        if (coll instanceof List12 || (coll instanceof ListN<?> c && !c.allowNulls)) {
             return (List<E>)coll;
+        } else if (coll.isEmpty()) { // implicit nullcheck of coll
+            return List.of();
         } else {
-            return (List<E>)List.of(coll.toArray()); // implicit nullcheck of coll
+            return (List<E>)List.of(coll.toArray());
         }
     }
 
@@ -262,7 +265,7 @@ class ImmutableCollections {
     // ---------- List Implementations ----------
 
     @jdk.internal.ValueBased
-    static abstract class AbstractImmutableList<E> extends AbstractImmutableCollection<E>
+    abstract static class AbstractImmutableList<E> extends AbstractImmutableCollection<E>
             implements List<E>, RandomAccess {
 
         // all mutating methods throw UnsupportedOperationException
@@ -310,6 +313,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public boolean equals(Object o) {
             if (o == this) {
                 return true;
@@ -329,6 +333,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int hashCode() {
             int hash = 1;
             for (int i = 0, s = size(); i < s; i++) {
@@ -342,6 +347,11 @@ class ImmutableCollections {
         @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@UnknownSignedness Object o) {
             return indexOf(o) >= 0;
+        }
+
+        @Override
+        public List<E> reversed() {
+            return ReverseOrderListView.of(this, false);
         }
 
         IndexOutOfBoundsException outOfBounds(int index) {
@@ -382,7 +392,8 @@ class ImmutableCollections {
             return cursor != size;
         }
 
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E next(@NonEmpty ListItr<E> this) {
             try {
                 int i = cursor;
@@ -398,6 +409,7 @@ class ImmutableCollections {
             throw uoe();
         }
 
+        @Pure
         public boolean hasPrevious() {
             if (!isListIterator) {
                 throw uoe();
@@ -419,6 +431,7 @@ class ImmutableCollections {
             }
         }
 
+        @Pure
         public int nextIndex() {
             if (!isListIterator) {
                 throw uoe();
@@ -426,6 +439,7 @@ class ImmutableCollections {
             return cursor;
         }
 
+        @Pure
         public int previousIndex() {
             if (!isListIterator) {
                 throw uoe();
@@ -476,6 +490,7 @@ class ImmutableCollections {
             return new SubList<>(list, fromIndex, toIndex - fromIndex);
         }
 
+        @Pure
         public E get(int index) {
             Objects.checkIndex(index, size);
             return root.get(offset + index);
@@ -511,6 +526,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int indexOf(Object o) {
             if (!allowNulls() && o == null) {
                 throw new NullPointerException();
@@ -524,6 +540,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int lastIndexOf(Object o) {
             if (!allowNulls() && o == null) {
                 throw new NullPointerException();
@@ -590,6 +607,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return false;
@@ -597,6 +615,7 @@ class ImmutableCollections {
 
         @Override
         @SuppressWarnings("unchecked")
+        @Pure
         public E get(int index) {
             if (index == 0) {
                 return e0;
@@ -607,6 +626,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int indexOf(Object o) {
             Objects.requireNonNull(o);
             if (o.equals(e0)) {
@@ -619,6 +639,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int lastIndexOf(Object o) {
             Objects.requireNonNull(o);
             if (e1 != EMPTY && o.equals(e1)) {
@@ -700,6 +721,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public E get(int index) {
             return elements[index];
         }
@@ -735,6 +757,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int indexOf(Object o) {
             if (!allowNulls && o == null) {
                 throw new NullPointerException();
@@ -749,6 +772,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int lastIndexOf(Object o) {
             if (!allowNulls && o == null) {
                 throw new NullPointerException();
@@ -766,10 +790,11 @@ class ImmutableCollections {
     // ---------- Set Implementations ----------
 
     @jdk.internal.ValueBased
-    static abstract class AbstractImmutableSet<E> extends AbstractImmutableCollection<E>
+    abstract static class AbstractImmutableSet<E> extends AbstractImmutableCollection<E>
             implements Set<E> {
 
         @Override
+        @Pure
         public boolean equals(Object o) {
             if (o == this) {
                 return true;
@@ -790,6 +815,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public abstract int hashCode();
     }
 
@@ -826,6 +852,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return false;
@@ -839,13 +866,14 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int hashCode() {
             return e0.hashCode() + (e1 == EMPTY ? 0 : e1.hashCode());
         }
 
         @Override
         public Iterator<E> iterator() {
-            return new Iterator<E>() {
+            return new Iterator<>() {
                 private int idx = (e1 == EMPTY) ? 1 : 2;
 
                 @Override
@@ -856,7 +884,8 @@ class ImmutableCollections {
                 }
 
                 @Override
-                @SideEffectsOnly("this")
+                // @SideEffectsOnly("this")
+                @DoesNotUnrefineReceiver("modifiability")
                 @SuppressWarnings("unchecked")
                 public E next(/*@NonEmpty Iterator<E> this*/) {
                     if (idx == 1) {
@@ -960,6 +989,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return size == 0;
@@ -994,7 +1024,8 @@ class ImmutableCollections {
             }
 
             @Override
-            @SideEffectsOnly("this")
+            // @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
             public E next(@NonEmpty SetNIterator this) {
                 if (remaining > 0) {
                     E element;
@@ -1027,6 +1058,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int hashCode() {
             int h = 0;
             for (E e : elements) {
@@ -1100,7 +1132,7 @@ class ImmutableCollections {
 
     // ---------- Map Implementations ----------
 
-    @jdk.internal.ValueBased
+    // Not a jdk.internal.ValueBased class; disqualified by fields in superclass AbstractMap
     abstract static class AbstractImmutableMap<K,V> extends AbstractMap<K,V> implements Serializable {
         @Override public void clear() { throw uoe(); }
         @Override public @PolyNull V compute(K key, BiFunction<? super K,? super V,? extends @PolyNull V> rf) { throw uoe(); }
@@ -1123,6 +1155,7 @@ class ImmutableCollections {
          * value should be returned.
          */
         @Override
+        @Pure
         public V getOrDefault(Object key, V defaultValue) {
             V v;
             return ((v = get(key)) != null)
@@ -1131,7 +1164,7 @@ class ImmutableCollections {
         }
     }
 
-    @jdk.internal.ValueBased
+    // Not a jdk.internal.ValueBased class; disqualified by fields in superclass AbstractMap
     static final class Map1<K,V> extends AbstractImmutableMap<K,V> {
         @Stable
         private final K k0;
@@ -1150,6 +1183,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public V get(Object o) {
             return o.equals(k0) ? v0 : null; // implicit nullcheck of o
         }
@@ -1167,11 +1201,13 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int size() {
             return 1;
         }
 
         @Override
+        @Pure
         @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return false;
@@ -1188,6 +1224,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int hashCode() {
             return k0.hashCode() ^ v0.hashCode();
         }
@@ -1202,7 +1239,7 @@ class ImmutableCollections {
      * @param <K> the key type
      * @param <V> the value type
      */
-    @jdk.internal.ValueBased
+    // Not a jdk.internal.ValueBased class; disqualified by fields in superclass AbstractMap
     static final class MapN<K,V> extends AbstractImmutableMap<K,V> {
 
         @Stable
@@ -1258,6 +1295,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int hashCode() {
             int hash = 0;
             for (int i = 0; i < table.length; i += 2) {
@@ -1271,6 +1309,7 @@ class ImmutableCollections {
 
         @Override
         @SuppressWarnings("unchecked")
+        @Pure
         public V get(Object o) {
             if (size == 0) {
                 Objects.requireNonNull(o);
@@ -1291,6 +1330,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return size == 0;
@@ -1316,7 +1356,8 @@ class ImmutableCollections {
                 return remaining > 0;
             }
 
-            @SideEffectsOnly("this")
+            // @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
             private int nextIndex() {
                 int idx = this.idx;
                 if (REVERSE) {

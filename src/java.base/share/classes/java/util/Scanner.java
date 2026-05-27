@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -39,8 +39,9 @@ import org.checkerframework.common.returnsreceiver.qual.This;
 import org.checkerframework.common.value.qual.IntRange;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.io.*;
 import java.math.*;
@@ -68,24 +69,28 @@ import sun.util.locale.provider.ResourceBundleBasedAdapter;
  * various {@code next} methods.
  *
  * <p>For example, this code allows a user to read a number from
- * {@code System.in}:
- * <blockquote><pre>{@code
- *     Scanner sc = new Scanner(System.in);
- *     int i = sc.nextInt();
- * }</pre></blockquote>
+ * the console.
+ * {@snippet :
+ *     var con = System.console();
+ *     if (con != null) {
+ *         // @link substring="reader()" target="java.io.Console#reader()" :
+ *         Scanner sc = new Scanner(con.reader());
+ *         int i = sc.nextInt();
+ *     }
+ * }
  *
  * <p>As another example, this code allows {@code long} types to be
  * assigned from entries in a file {@code myNumbers}:
- * <blockquote><pre>{@code
+ * {@snippet :
  *      Scanner sc = new Scanner(new File("myNumbers"));
  *      while (sc.hasNextLong()) {
  *          long aLong = sc.nextLong();
  *      }
- * }</pre></blockquote>
+ * }
  *
  * <p>The scanner can also use delimiters other than whitespace. This
  * example reads several items in from a string:
- * <blockquote><pre>{@code
+ * {@snippet :
  *     String input = "1 fish 2 fish red fish blue fish";
  *     Scanner s = new Scanner(input).useDelimiter("\\s*fish\\s*");
  *     System.out.println(s.nextInt());
@@ -93,7 +98,7 @@ import sun.util.locale.provider.ResourceBundleBasedAdapter;
  *     System.out.println(s.next());
  *     System.out.println(s.next());
  *     s.close();
- * }</pre></blockquote>
+ * }
  * <p>
  * prints the following output:
  * <blockquote><pre>{@code
@@ -105,7 +110,7 @@ import sun.util.locale.provider.ResourceBundleBasedAdapter;
  *
  * <p>The same output can be generated with this code, which uses a regular
  * expression to parse all four tokens at once:
- * <blockquote><pre>{@code
+ * {@snippet :
  *     String input = "1 fish 2 fish red fish blue fish";
  *     Scanner s = new Scanner(input);
  *     s.findInLine("(\\d+) fish (\\d+) fish (\\w+) fish (\\w+)");
@@ -113,7 +118,7 @@ import sun.util.locale.provider.ResourceBundleBasedAdapter;
  *     for (int i=1; i<=result.groupCount(); i++)
  *         System.out.println(result.group(i));
  *     s.close();
- * }</pre></blockquote>
+ * }
  *
  * <p>The <a id="default-delimiter">default whitespace delimiter</a> used
  * by a scanner is as recognized by {@link Character#isWhitespace(char)
@@ -575,10 +580,11 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
     /**
      * Constructs a new {@code Scanner} that produces values scanned
      * from the specified input stream. Bytes from the stream are converted
-     * into characters using the underlying platform's
-     * {@linkplain java.nio.charset.Charset#defaultCharset() default charset}.
+     * into characters using the
+     * {@linkplain Charset#defaultCharset() default charset}.
      *
      * @param  source An input stream to be scanned
+     * @see Charset#defaultCharset()
      */
     public @MustCallAlias Scanner(@MustCallAlias InputStream source) {
         this(new InputStreamReader(source), WHITESPACE_PATTERN);
@@ -647,11 +653,12 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
     /**
      * Constructs a new {@code Scanner} that produces values scanned
      * from the specified file. Bytes from the file are converted into
-     * characters using the underlying platform's
-     * {@linkplain java.nio.charset.Charset#defaultCharset() default charset}.
+     * characters using the
+     * {@linkplain Charset#defaultCharset() default charset}.
      *
      * @param  source A file to be scanned
      * @throws FileNotFoundException if source is not found
+     * @see Charset#defaultCharset()
      */
     public Scanner(File source) throws FileNotFoundException {
         this((ReadableByteChannel)(new FileInputStream(source).getChannel()));
@@ -720,13 +727,14 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
     /**
      * Constructs a new {@code Scanner} that produces values scanned
      * from the specified file. Bytes from the file are converted into
-     * characters using the underlying platform's
-     * {@linkplain java.nio.charset.Charset#defaultCharset() default charset}.
+     * characters using the
+     * {@linkplain Charset#defaultCharset() default charset}.
      *
      * @param   source
      *          the path to the file to be scanned
      * @throws  IOException
      *          if an I/O error occurs opening source
+     * @see Charset#defaultCharset()
      *
      * @since   1.7
      */
@@ -787,10 +795,11 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
     /**
      * Constructs a new {@code Scanner} that produces values scanned
      * from the specified channel. Bytes from the source are converted into
-     * characters using the underlying platform's
-     * {@linkplain java.nio.charset.Charset#defaultCharset() default charset}.
+     * characters using the
+     * {@linkplain Charset#defaultCharset() default charset}.
      *
      * @param  source A channel to scan
+     * @see Charset#defaultCharset()
      */
     public @MustCallAlias Scanner(@MustCallAlias ReadableByteChannel source) {
         this(makeReadable(Objects.requireNonNull(source, "source")),
@@ -1482,7 +1491,8 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws IllegalStateException if this scanner is closed
      * @see java.util.Iterator
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public String next(@GuardSatisfied @NonEmpty Scanner this) {
         ensureOpen();
         clearCaches();
@@ -1508,6 +1518,8 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws UnsupportedOperationException if this method is invoked.
      * @see java.util.Iterator
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public void remove(@GuardSatisfied Scanner this) {
         throw new UnsupportedOperationException();
     }
@@ -1545,7 +1557,8 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws NoSuchElementException if no such tokens are available
      * @throws IllegalStateException if this scanner is closed
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public String next(@GuardSatisfied @NonEmpty Scanner this, String pattern)  {
         return next(patternCache.forName(pattern));
     }
@@ -1596,7 +1609,8 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws NoSuchElementException if no more tokens are available
      * @throws IllegalStateException if this scanner is closed
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public String next(@GuardSatisfied @NonEmpty Scanner this, Pattern pattern) {
         ensureOpen();
         if (pattern == null)
@@ -1628,7 +1642,8 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * This method may block while waiting for input. The scanner does not
      * advance past any input.
      *
-     * @return true if and only if this scanner has another line of input
+     * @return true if there is a line separator in the remaining input
+     * or if the input has other remaining characters
      * @throws IllegalStateException if this scanner is closed
      */
     @Pure
@@ -1669,7 +1684,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws NoSuchElementException if no line was found
      * @throws IllegalStateException if this scanner is closed
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public String nextLine(@GuardSatisfied @NonEmpty Scanner this) {
         modCount++;
         if (hasNextPattern == linePattern())
@@ -1919,7 +1934,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws NoSuchElementException if input is exhausted
      * @throws IllegalStateException if this scanner is closed
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public boolean nextBoolean(@GuardSatisfied @NonEmpty Scanner this)  {
         clearCaches();
         return Boolean.parseBoolean(next(boolPattern()));
@@ -1986,7 +2001,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws NoSuchElementException if input is exhausted
      * @throws IllegalStateException if this scanner is closed
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public @PolySigned byte nextByte(@GuardSatisfied @NonEmpty Scanner this) {
          return nextByte(defaultRadix);
     }
@@ -2022,7 +2037,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws IllegalStateException if this scanner is closed
      * @throws IllegalArgumentException if the radix is out of range
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public @PolySigned byte nextByte(@GuardSatisfied @NonEmpty Scanner this, @Positive @IntRange(from = 2, to = 36) int radix) {
         // Check cached result
         if ((typeCache != null) && (typeCache instanceof Byte)
@@ -2106,7 +2121,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws NoSuchElementException if input is exhausted
      * @throws IllegalStateException if this scanner is closed
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public @PolySigned short nextShort(@GuardSatisfied @NonEmpty Scanner this) {
         return nextShort(defaultRadix);
     }
@@ -2142,7 +2157,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws IllegalStateException if this scanner is closed
      * @throws IllegalArgumentException if the radix is out of range
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public @PolySigned short nextShort(@GuardSatisfied @NonEmpty Scanner this, @Positive @IntRange(from = 2, to = 36) int radix) {
         // Check cached result
         if ((typeCache != null) && (typeCache instanceof Short)
@@ -2250,7 +2265,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws NoSuchElementException if input is exhausted
      * @throws IllegalStateException if this scanner is closed
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public @PolySigned int nextInt(@GuardSatisfied @NonEmpty Scanner this) {
         return nextInt(defaultRadix);
     }
@@ -2286,7 +2301,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws IllegalStateException if this scanner is closed
      * @throws IllegalArgumentException if the radix is out of range
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public @PolySigned int nextInt(@GuardSatisfied @NonEmpty Scanner this, @Positive @IntRange(from = 2, to = 36) int radix) {
         // Check cached result
         if ((typeCache != null) && (typeCache instanceof Integer)
@@ -2370,7 +2385,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws NoSuchElementException if input is exhausted
      * @throws IllegalStateException if this scanner is closed
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public @PolySigned long nextLong(@GuardSatisfied @NonEmpty Scanner this) {
         return nextLong(defaultRadix);
     }
@@ -2406,7 +2421,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws IllegalStateException if this scanner is closed
      * @throws IllegalArgumentException if the radix is out of range
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public @PolySigned long nextLong(@GuardSatisfied @NonEmpty Scanner this, @Positive @IntRange(from = 2, to = 36) int radix) {
         // Check cached result
         if ((typeCache != null) && (typeCache instanceof Long)
@@ -2532,7 +2547,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws NoSuchElementException if input is exhausted
      * @throws IllegalStateException if this scanner is closed
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public float nextFloat(@GuardSatisfied @NonEmpty Scanner this) {
         // Check cached result
         if ((typeCache != null) && (typeCache instanceof Float)) {
@@ -2601,7 +2616,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws NoSuchElementException if the input is exhausted
      * @throws IllegalStateException if this scanner is closed
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public double nextDouble(@GuardSatisfied @NonEmpty Scanner this) {
         // Check cached result
         if ((typeCache != null) && (typeCache instanceof Double)) {
@@ -2686,7 +2701,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws NoSuchElementException if the input is exhausted
      * @throws IllegalStateException if this scanner is closed
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public BigInteger nextBigInteger(@GuardSatisfied @NonEmpty Scanner this) {
         return nextBigInteger(defaultRadix);
     }
@@ -2717,7 +2732,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws IllegalStateException if this scanner is closed
      * @throws IllegalArgumentException if the radix is out of range
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public BigInteger nextBigInteger(@GuardSatisfied @NonEmpty Scanner this, @IntRange(from = 2, to = 36) int radix) {
         // Check cached result
         if ((typeCache != null) && (typeCache instanceof BigInteger val)
@@ -2784,7 +2799,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws NoSuchElementException if the input is exhausted
      * @throws IllegalStateException if this scanner is closed
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public BigDecimal nextBigDecimal(@GuardSatisfied @NonEmpty Scanner this) {
         // Check cached result
         if ((typeCache != null) && (typeCache instanceof BigDecimal val)) {

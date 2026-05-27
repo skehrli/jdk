@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2009, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,8 +26,10 @@
 package java.lang;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 /**
  * An object that may hold resources (such as file or socket handles)
@@ -63,7 +65,8 @@ public interface AutoCloseable {
      * This method is invoked automatically on objects managed by the
      * {@code try}-with-resources statement.
      *
-     * <p>While this interface method is declared to throw {@code
+     * @apiNote
+     * While this interface method is declared to throw {@code
      * Exception}, implementers are <em>strongly</em> encouraged to
      * declare concrete implementations of the {@code close} method to
      * throw more specific exceptions, or to throw no exception at all
@@ -103,5 +106,6 @@ public interface AutoCloseable {
      *
      * @throws Exception if this resource cannot be closed
      */
+    @DoesNotUnrefineReceiver("resourceleak")
     void close(@GuardSatisfied AutoCloseable this) throws Exception;
 }

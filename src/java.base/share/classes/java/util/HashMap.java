@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -40,12 +40,14 @@ import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.io.IOException;
 import java.io.InvalidObjectException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -310,20 +312,27 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
             this.next = next;
         }
 
+        @Pure
         public final K getKey()        { return key; }
+        @Pure
         public final V getValue()      { return value; }
+        @SideEffectFree
         public final String toString() { return key + "=" + value; }
 
+        @Pure
         public final int hashCode() {
             return Objects.hashCode(key) ^ Objects.hashCode(value);
         }
 
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public final V setValue(V newValue) {
             V oldValue = value;
             value = newValue;
             return oldValue;
         }
 
+        @Pure
         public final boolean equals(Object o) {
             if (o == this)
                 return true;
@@ -452,6 +461,10 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
      * Constructs an empty {@code HashMap} with the specified initial
      * capacity and load factor.
      *
+     * @apiNote
+     * To create a {@code HashMap} with an initial capacity that accommodates
+     * an expected number of mappings, use {@link #newHashMap(int) newHashMap}.
+     *
      * @param  initialCapacity the initial capacity
      * @param  loadFactor      the load factor
      * @throws IllegalArgumentException if the initial capacity is negative
@@ -473,6 +486,10 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
     /**
      * Constructs an empty {@code HashMap} with the specified initial
      * capacity and the default load factor (0.75).
+     *
+     * @apiNote
+     * To create a {@code HashMap} with an initial capacity that accommodates
+     * an expected number of mappings, use {@link #newHashMap(int) newHashMap}.
      *
      * @param  initialCapacity the initial capacity.
      * @throws IllegalArgumentException if the initial capacity is negative.
@@ -514,9 +531,9 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
         int s = m.size();
         if (s > 0) {
             if (table == null) { // pre-size
-                float ft = ((float)s / loadFactor) + 1.0F;
-                int t = ((ft < (float)MAXIMUM_CAPACITY) ?
-                         (int)ft : MAXIMUM_CAPACITY);
+                double dt = Math.ceil(s / (double)loadFactor);
+                int t = ((dt < (double)MAXIMUM_CAPACITY) ?
+                         (int)dt : MAXIMUM_CAPACITY);
                 if (t > threshold)
                     threshold = tableSizeFor(t);
             } else {
@@ -613,8 +630,8 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
      * @return {@code true} if this map contains a mapping for the specified
      * key.
      */
-    @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
+    @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     public boolean containsKey(@GuardSatisfied HashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object key) {
         return getNode(key) != null;
     }
@@ -632,6 +649,8 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
      *         previously associated {@code null} with {@code key}.)
      */
     @EnsuresKeyFor(value={"#1"}, map={"this"})
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public @Nullable V put(@GuardSatisfied HashMap<K, V> this, K key, V value) {
         return putVal(hash(key), key, value, false, true);
     }
@@ -806,6 +825,8 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
      * @param m mappings to be stored in this map
      * @throws NullPointerException if the specified map is null
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public void putAll(@GuardSatisfied HashMap<K, V> this, Map<? extends K, ? extends V> m) {
         putMapEntries(m, true);
     }
@@ -819,6 +840,8 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
      *         (A {@code null} return can also indicate that the map
      *         previously associated {@code null} with {@code key}.)
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public @Nullable V remove(@GuardSatisfied HashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object key) {
         Node<K,V> e;
         return (e = removeNode(hash(key), key, null, false, true)) == null ?
@@ -880,6 +903,8 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
      * Removes all of the mappings from this map.
      * The map will be empty after this call returns.
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public void clear(@GuardSatisfied HashMap<K, V> this) {
         Node<K,V>[] tab;
         modCount++;
@@ -1009,12 +1034,16 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
     final class KeySet extends AbstractSet<K> {
         @Pure
         public final @NonNegative int size()                 { return size; }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public final void clear()               { HashMap.this.clear(); }
         @SideEffectFree
         public final Iterator<K> iterator()     { return new KeyIterator(); }
         @Pure
         @EnsuresNonEmptyIf(result = true, expression = "this")
         public final boolean contains(@Nullable @UnknownSignedness Object o) { return containsKey(o); }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public final boolean remove(@Nullable @UnknownSignedness Object key) {
             return removeNode(hash(key), key, null, false, true) != null;
         }
@@ -1023,6 +1052,7 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
             return new KeySpliterator<>(HashMap.this, 0, -1, 0, 0);
         }
 
+        @SideEffectFree
         public Object[] toArray() {
             return keysToArray(new Object[size]);
         }
@@ -1031,6 +1061,7 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
             return keysToArray(prepareArray(a));
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public final void forEach(Consumer<? super K> action) {
             Node<K,V>[] tab;
             if (action == null)
@@ -1075,6 +1106,8 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
     final class Values extends AbstractCollection<V> {
         @Pure
         public final @NonNegative int size()                 { return size; }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public final void clear()               { HashMap.this.clear(); }
         @SideEffectFree
         public final Iterator<V> iterator()     { return new ValueIterator(); }
@@ -1086,6 +1119,7 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
             return new ValueSpliterator<>(HashMap.this, 0, -1, 0, 0);
         }
 
+        @SideEffectFree
         public Object[] toArray() {
             return valuesToArray(new Object[size]);
         }
@@ -1135,6 +1169,8 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
     final class EntrySet extends AbstractSet<Map.Entry<K,V>> {
         @Pure
         public final @NonNegative int size()                 { return size; }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public final void clear()               { HashMap.this.clear(); }
         @SideEffectFree
         public final Iterator<Map.Entry<K,V>> iterator() {
@@ -1149,6 +1185,8 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
             Node<K,V> candidate = getNode(key);
             return candidate != null && candidate.equals(e);
         }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public final boolean remove(@Nullable @UnknownSignedness Object o) {
             if (o instanceof Map.Entry<?, ?> e) {
                 Object key = e.getKey();
@@ -1161,6 +1199,7 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
         public final Spliterator<Map.Entry<K,V>> spliterator() {
             return new EntrySpliterator<>(HashMap.this, 0, -1, 0, 0);
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public final void forEach(Consumer<? super Map.Entry<K,V>> action) {
             Node<K,V>[] tab;
             if (action == null)
@@ -1188,16 +1227,22 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
 
     @EnsuresKeyFor(value={"#1"}, map={"this"})
     @Override
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public @Nullable V putIfAbsent(K key, V value) {
         return putVal(hash(key), key, value, true, true);
     }
 
     @Override
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean remove(@GuardSatisfied @Nullable @UnknownSignedness Object key, @GuardSatisfied @Nullable @UnknownSignedness Object value) {
         return removeNode(hash(key), key, value, true, true) != null;
     }
 
     @Override
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean replace(K key, V oldValue, V newValue) {
         Node<K,V> e; V v;
         if ((e = getNode(key)) != null &&
@@ -1210,6 +1255,8 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
     }
 
     @Override
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public @Nullable V replace(K key, V value) {
         Node<K,V> e;
         if ((e = getNode(key)) != null) {
@@ -1232,6 +1279,7 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
      * mapping function modified this map
      */
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public @PolyNull V computeIfAbsent(K key,
                              Function<? super K, ? extends @PolyNull V> mappingFunction) {
         if (mappingFunction == null)
@@ -1298,6 +1346,7 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
      * remapping function modified this map
      */
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public @PolyNull V computeIfPresent(K key,
                               BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
         if (remappingFunction == null)
@@ -1332,6 +1381,7 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
      * remapping function modified this map
      */
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public @PolyNull V compute(K key,
                      BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
         if (remappingFunction == null)
@@ -1397,6 +1447,7 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
      * remapping function modified this map
      */
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public @PolyNull V merge(K key, @NonNull V value,
                    BiFunction<? super V, ? super V, ? extends @PolyNull V> remappingFunction) {
         if (value == null || remappingFunction == null)
@@ -1458,6 +1509,7 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
     }
 
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public void forEach(BiConsumer<? super K, ? super V> action) {
         Node<K,V>[] tab;
         if (action == null)
@@ -1474,6 +1526,7 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
     }
 
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public void replaceAll(BiFunction<? super K, ? super V, ? extends V> function) {
         Node<K,V>[] tab;
         if (function == null)
@@ -1554,29 +1607,34 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
      * @throws IOException if an I/O error occurs
      */
     @java.io.Serial
-    private void readObject(java.io.ObjectInputStream s)
+    private void readObject(ObjectInputStream s)
         throws IOException, ClassNotFoundException {
-        // Read in the threshold (ignored), loadfactor, and any hidden stuff
-        s.defaultReadObject();
+
+        ObjectInputStream.GetField fields = s.readFields();
+
+        // Read loadFactor (ignore threshold)
+        float lf = fields.get("loadFactor", 0.75f);
+        if (lf <= 0 || Float.isNaN(lf))
+            throw new InvalidObjectException("Illegal load factor: " + lf);
+
+        lf = Math.clamp(lf, 0.25f, 4.0f);
+        HashMap.UnsafeHolder.putLoadFactor(this, lf);
+
         reinitialize();
-        if (loadFactor <= 0 || Float.isNaN(loadFactor))
-            throw new InvalidObjectException("Illegal load factor: " +
-                                             loadFactor);
+
         s.readInt();                // Read and ignore number of buckets
         int mappings = s.readInt(); // Read number of mappings (size)
-        if (mappings < 0)
-            throw new InvalidObjectException("Illegal mappings count: " +
-                                             mappings);
-        else if (mappings > 0) { // (if zero, use defaults)
-            // Size the table using given load factor only if within
-            // range of 0.25...4.0
-            float lf = Math.min(Math.max(0.25f, loadFactor), 4.0f);
-            float fc = (float)mappings / lf + 1.0f;
-            int cap = ((fc < DEFAULT_INITIAL_CAPACITY) ?
+        if (mappings < 0) {
+            throw new InvalidObjectException("Illegal mappings count: " + mappings);
+        } else if (mappings == 0) {
+            // use defaults
+        } else if (mappings > 0) {
+            double dc = Math.ceil(mappings / (double)lf);
+            int cap = ((dc < DEFAULT_INITIAL_CAPACITY) ?
                        DEFAULT_INITIAL_CAPACITY :
-                       (fc >= MAXIMUM_CAPACITY) ?
+                       (dc >= MAXIMUM_CAPACITY) ?
                        MAXIMUM_CAPACITY :
-                       tableSizeFor((int)fc));
+                       tableSizeFor((int)dc));
             float ft = (float)cap * lf;
             threshold = ((cap < MAXIMUM_CAPACITY && ft < MAXIMUM_CAPACITY) ?
                          (int)ft : Integer.MAX_VALUE);
@@ -1596,6 +1654,18 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
                     V value = (V) s.readObject();
                 putVal(hash(key), key, value, false, false);
             }
+        }
+    }
+
+    // Support for resetting final field during deserializing
+    private static final class UnsafeHolder {
+        private UnsafeHolder() { throw new InternalError(); }
+        private static final jdk.internal.misc.Unsafe unsafe
+                = jdk.internal.misc.Unsafe.getUnsafe();
+        private static final long LF_OFFSET
+                = unsafe.objectFieldOffset(HashMap.class, "loadFactor");
+        static void putLoadFactor(HashMap<?, ?> map, float lf) {
+            unsafe.putFloat(map, LF_OFFSET, lf);
         }
     }
 
@@ -1624,7 +1694,7 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
             return next != null;
         }
 
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         final Node<K,V> nextNode(@NonEmpty HashIterator this) {
             Node<K,V>[] t;
             Node<K,V> e = next;
@@ -1638,6 +1708,8 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
             return e;
         }
 
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public final void remove() {
             Node<K,V> p = current;
             if (p == null)
@@ -1652,16 +1724,22 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
 
     final class KeyIterator extends HashIterator
         implements Iterator<K> {
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public final K next(@NonEmpty KeyIterator this) { return nextNode().key; }
     }
 
     final class ValueIterator extends HashIterator
         implements Iterator<V> {
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public final V next(@NonEmpty ValueIterator this) { return nextNode().value; }
     }
 
     final class EntryIterator extends HashIterator
         implements Iterator<Map.Entry<K,V>> {
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public final Map.Entry<K,V> next(@NonEmpty EntryIterator this) { return nextNode(); }
     }
 
@@ -2578,6 +2656,37 @@ public class HashMap<K,V extends @MustCallUnknown Object> extends AbstractMap<K,
                 return false;
             return true;
         }
+    }
+
+    /**
+     * Calculate initial capacity for HashMap based classes, from expected size and default load factor (0.75).
+     *
+     * @param numMappings the expected number of mappings
+     * @return initial capacity for HashMap based classes.
+     * @since 19
+     */
+    static int calculateHashMapCapacity(int numMappings) {
+        return (int) Math.ceil(numMappings / (double) DEFAULT_LOAD_FACTOR);
+    }
+
+    /**
+     * Creates a new, empty HashMap suitable for the expected number of mappings.
+     * The returned map uses the default load factor of 0.75, and its initial capacity is
+     * generally large enough so that the expected number of mappings can be added
+     * without resizing the map.
+     *
+     * @param numMappings the expected number of mappings
+     * @param <K>         the type of keys maintained by the new map
+     * @param <V>         the type of mapped values
+     * @return the newly created map
+     * @throws IllegalArgumentException if numMappings is negative
+     * @since 19
+     */
+    public static <K, V> HashMap<K, V> newHashMap(int numMappings) {
+        if (numMappings < 0) {
+            throw new IllegalArgumentException("Negative number of mappings: " + numMappings);
+        }
+        return new HashMap<>(calculateHashMapCapacity(numMappings));
     }
 
 }

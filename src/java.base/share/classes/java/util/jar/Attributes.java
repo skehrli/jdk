@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,7 +34,9 @@ import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
+import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Collection;
@@ -66,6 +68,7 @@ import sun.util.logging.PlatformLogger;
  * <p>This map and its views have a predictable iteration order, namely the
  * order that keys were inserted into the map, as with {@link LinkedHashMap}.
  *
+ * @spec jar/jar.html JAR File Specification
  * @author  David Connelly
  * @see     Manifest
  * @since   1.2
@@ -89,7 +92,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * Constructs a new, empty Attributes object with default size.
      */
     public Attributes() {
-        this(11);
+        this(16);
     }
 
     /**
@@ -99,7 +102,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @param size the initial number of attributes
      */
     public Attributes(int size) {
-        map = new LinkedHashMap<>(size);
+        map = LinkedHashMap.newLinkedHashMap(size);
     }
 
     /**
@@ -121,6 +124,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @return the value of the specified attribute name, or null if
      *         not found.
      */
+    @Pure
     public Object get(Object name) {
         return map.get(name);
     }
@@ -140,6 +144,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      *         not found.
      * @throws IllegalArgumentException if the attribute name is invalid
      */
+    @Pure
     public String getValue(String name) {
         return (String)get(Name.of(name));
     }
@@ -157,6 +162,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @return the String value of the specified Attribute.Name, or null if
      *         not found.
      */
+    @Pure
     public String getValue(Name name) {
         return (String)get(name);
     }
@@ -172,6 +178,8 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @throws    ClassCastException if the name is not a Attributes.Name
      *            or the value is not a String
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public Object put(Object name, Object value) {
         return map.put((Attributes.Name)name, (String)value);
     }
@@ -203,6 +211,8 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @param name attribute name
      * @return the previous value of the attribute, or null if none
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public Object remove(@GuardSatisfied @Nullable @UnknownSignedness Object name) {
         return map.remove(name);
     }
@@ -238,6 +248,8 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @param attr the Attributes to be stored in this map
      * @throws    ClassCastException if attr is not an Attributes
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public void putAll(Map<?,?> attr) {
         // ## javac bug?
         if (!Attributes.class.isInstance(attr))
@@ -249,6 +261,8 @@ public class Attributes implements Map<Object,Object>, Cloneable {
     /**
      * Removes all attributes from this Map.
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public void clear() {
         map.clear();
     }
@@ -273,6 +287,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
     /**
      * Returns a Set view of the attribute names (keys) contained in this Map.
      */
+    @SideEffectFree
     public Set<Object> keySet() {
         return map.keySet();
     }
@@ -280,6 +295,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
     /**
      * Returns a Collection view of the attribute values contained in this Map.
      */
+    @SideEffectFree
     public Collection<Object> values() {
         return map.values();
     }
@@ -311,6 +327,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
     /**
      * Returns the hash code value for this Map.
      */
+    @Pure
     public int hashCode() {
         return map.hashCode();
     }
@@ -324,6 +341,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * the Attributes returned can be safely modified without affecting
      * the original.
      */
+    @SideEffectFree
     public Object clone() {
         return new Attributes(this);
     }
@@ -395,7 +413,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
 
     int read(Manifest.FastInputStream is, byte[] lbuf, String filename, int lineNumber) throws IOException {
         String name = null, value;
-        byte[] lastline = null;
+        ByteArrayOutputStream fullLine = new ByteArrayOutputStream();
 
         int len;
         while ((len = is.readLine(lbuf)) != -1) {
@@ -421,15 +439,12 @@ public class Attributes implements Map<Object,Object>, Cloneable {
                                 + Manifest.getErrorPosition(filename, lineNumber) + ")");
                 }
                 lineContinued = true;
-                byte[] buf = new byte[lastline.length + len - 1];
-                System.arraycopy(lastline, 0, buf, 0, lastline.length);
-                System.arraycopy(lbuf, 1, buf, lastline.length, len - 1);
+                fullLine.write(lbuf, 1, len - 1);
                 if (is.peek() == ' ') {
-                    lastline = buf;
                     continue;
                 }
-                value = new String(buf, 0, buf.length, UTF_8.INSTANCE);
-                lastline = null;
+                value = fullLine.toString(UTF_8.INSTANCE);
+                fullLine.reset();
             } else {
                 while (lbuf[i++] != ':') {
                     if (i >= len) {
@@ -443,8 +458,8 @@ public class Attributes implements Map<Object,Object>, Cloneable {
                 }
                 name = new String(lbuf, 0, i - 2, UTF_8.INSTANCE);
                 if (is.peek() == ' ') {
-                    lastline = new byte[len - i];
-                    System.arraycopy(lbuf, i, lastline, 0, len - i);
+                    fullLine.reset();
+                    fullLine.write(lbuf, i, len - i);
                     continue;
                 }
                 value = new String(lbuf, i, len - i, UTF_8.INSTANCE);
@@ -477,6 +492,8 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * and will be UTF8-encoded when written to the output stream.  See the
      * <a href="{@docRoot}/../specs/jar/jar.html">JAR File Specification</a>
      * for more information about valid attribute names and values.
+     *
+     * @spec jar/jar.html JAR File Specification
      */
     public static class Name {
         private final String name;
@@ -487,6 +504,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
          */
         private static @Stable Map<String, Name> KNOWN_NAMES;
 
+        @SideEffectFree
         static final Name of(String name) {
             Name n = KNOWN_NAMES.get(name);
             if (n != null) {
@@ -539,6 +557,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
          * @return true if this attribute name is equal to the
          *         specified attribute object
          */
+        @Pure
         public boolean equals(Object o) {
             if (this == o) {
                 return true;
@@ -550,6 +569,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
         /**
          * Computes the hash value for this attribute name.
          */
+        @Pure
         public int hashCode() {
             return hashCode;
         }
@@ -557,6 +577,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
         /**
          * Returns the attribute name as a String.
          */
+        @SideEffectFree
         public String toString() {
             return name;
         }

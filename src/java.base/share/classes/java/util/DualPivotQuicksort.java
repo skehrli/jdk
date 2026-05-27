@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2009, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -158,6 +158,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
+    // @SideEffectsOnly("#1")
     static void sort(int[] a, int parallelism, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         int size = high - low;
 
@@ -181,6 +182,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
+    // @SideEffectsOnly("#2")
     static void sort(Sorter sorter, int[] a, int bits, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         while (true) {
             int end = high - 1, size = high - low;
@@ -912,6 +914,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
+    // @SideEffectsOnly("#1")
     static void sort(long[] a, int parallelism, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         int size = high - low;
 
@@ -935,6 +938,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
+    // @SideEffectsOnly("#2")
     static void sort(Sorter sorter, long[] a, int bits, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         while (true) {
             int end = high - 1, size = high - low;
@@ -1659,6 +1663,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
+    // @SideEffectsOnly("#1")
     static void sort(byte[] a, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         if (high - low > MIN_BYTE_COUNTING_SORT_SIZE) {
             countingSort(a, low, high);
@@ -1747,6 +1752,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
+    // @SideEffectsOnly("#1")
     static void sort(char[] a, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         if (high - low > MIN_SHORT_OR_CHAR_COUNTING_SORT_SIZE) {
             countingSort(a, low, high);
@@ -1765,6 +1771,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
+    // @SideEffectsOnly("#1")
     static void sort(char[] a, int bits, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         while (true) {
             int end = high - 1, size = high - low;
@@ -2066,6 +2073,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
+    // @SideEffectsOnly("#1")
     static void sort(short[] a, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         if (high - low > MIN_SHORT_OR_CHAR_COUNTING_SORT_SIZE) {
             countingSort(a, low, high);
@@ -2084,6 +2092,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
+    // @SideEffectsOnly("#1")
     static void sort(short[] a, int bits, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         while (true) {
             int end = high - 1, size = high - low;
@@ -2401,6 +2410,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
+    // @SideEffectsOnly("#1")
     static void sort(float[] a, int parallelism, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         /*
          * Phase 1. Count the number of negative zero -0.0f,
@@ -2476,6 +2486,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
+    // @SideEffectsOnly("#2")
     static void sort(Sorter sorter, float[] a, int bits, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         while (true) {
             int end = high - 1, size = high - low;
@@ -3207,6 +3218,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
+    // @SideEffectsOnly("#1")
     static void sort(double[] a, int parallelism, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         /*
          * Phase 1. Count the number of negative zero -0.0d,
@@ -3282,6 +3294,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
+    // @SideEffectsOnly("#2")
     static void sort(Sorter sorter, double[] a, int bits, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         while (true) {
             int end = high - 1, size = high - low;
@@ -4003,6 +4016,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      */
     private static final class Sorter extends CountedCompleter<Void> {
         private static final long serialVersionUID = 20180818L;
+        @SuppressWarnings("serial")
         private final Object a, b;
         private final int low, size, offset, depth;
 
@@ -4072,6 +4086,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      */
     private static final class Merger extends CountedCompleter<Void> {
         private static final long serialVersionUID = 20180818L;
+        @SuppressWarnings("serial")
         private final Object dst, a1, a2;
         private final int k, lo1, hi1, lo2, hi2;
 
@@ -4121,6 +4136,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      */
     private static final class RunMerger extends RecursiveTask<Object> {
         private static final long serialVersionUID = 20180818L;
+        @SuppressWarnings("serial")
         private final Object a, b;
         private final int[] run;
         private final int offset, aim, lo, hi;

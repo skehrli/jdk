@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -37,10 +37,13 @@ import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Array;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -62,6 +65,10 @@ import jdk.internal.access.SharedSecrets;
  * use of the {@code equals} method when comparing objects.  This class is
  * designed for use only in the rare cases wherein reference-equality
  * semantics are required.</b>
+ *
+ * <p>The view collections of this map also have reference-equality semantics
+ * for their elements. See the {@link keySet() keySet}, {@link values() values},
+ * and {@link entrySet() entrySet} methods for further information.
  *
  * <p>A typical use of this class is <i>topology-preserving object graph
  * transformations</i>, such as serialization or deep-copying.  To perform such
@@ -143,6 +150,9 @@ import jdk.internal.access.SharedSecrets;
  * tables than does using separate arrays.)  For many Java implementations
  * and operation mixes, this class will yield better performance than
  * {@link HashMap}, which uses <i>chaining</i> rather than linear-probing.
+ *
+ * @param <K> the type of keys maintained by this map
+ * @param <V> the type of mapped values
  *
  * @see     System#identityHashCode(Object)
  * @see     Object#hashCode()
@@ -344,8 +354,8 @@ public class IdentityHashMap<K,V>
      *
      * @see #put(Object, Object)
      */
-    @Pure
     @SuppressWarnings("unchecked")
+    @Pure
     public @Nullable V get(@GuardSatisfied IdentityHashMap<K, V> this, @UnknownSignedness @GuardSatisfied @Nullable Object key) {
         Object k = maskNull(key);
         Object[] tab = table;
@@ -363,15 +373,16 @@ public class IdentityHashMap<K,V>
 
     /**
      * Tests whether the specified object reference is a key in this identity
-     * hash map.
+     * hash map. Returns {@code true} if and only if this map contains a mapping
+     * with key {@code k} such that {@code (key == k)}.
      *
      * @param   key   possible key
      * @return  {@code true} if the specified object reference is a key
      *          in this map
      * @see     #containsValue(Object)
      */
-    @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
+    @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     public boolean containsKey(@GuardSatisfied IdentityHashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object key) {
         Object k = maskNull(key);
         Object[] tab = table;
@@ -389,7 +400,8 @@ public class IdentityHashMap<K,V>
 
     /**
      * Tests whether the specified object reference is a value in this identity
-     * hash map.
+     * hash map. Returns {@code true} if and only if this map contains a mapping
+     * with value {@code v} such that {@code (value == v)}.
      *
      * @param value value whose presence in this map is to be tested
      * @return {@code true} if this map maps one or more keys to the
@@ -431,8 +443,9 @@ public class IdentityHashMap<K,V>
 
     /**
      * Associates the specified value with the specified key in this identity
-     * hash map.  If the map previously contained a mapping for the key, the
-     * old value is replaced.
+     * hash map. If this map already {@link containsKey(Object) contains}
+     * a mapping for the key, the old value is replaced, otherwise, a new mapping
+     * is inserted into this map.
      *
      * @param key the key with which the specified value is to be associated
      * @param value the value to be associated with the specified key
@@ -445,6 +458,8 @@ public class IdentityHashMap<K,V>
      * @see     #containsKey(Object)
      */
     @EnsuresKeyFor(value={"#1"}, map={"this"})
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public @Nullable V put(@GuardSatisfied IdentityHashMap<K, V> this, K key, V value) {
         final Object k = maskNull(key);
 
@@ -518,12 +533,16 @@ public class IdentityHashMap<K,V>
 
     /**
      * Copies all of the mappings from the specified map to this map.
-     * These mappings will replace any mappings that this map had for
-     * any of the keys currently in the specified map.
+     * For each mapping in the specified map, if this map already
+     * {@link containsKey(Object) contains} a mapping for the key,
+     * its value is replaced with the value from the specified map;
+     * otherwise, a new mapping is inserted into this map.
      *
      * @param m mappings to be stored in this map
      * @throws NullPointerException if the specified map is null
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public void putAll(@GuardSatisfied IdentityHashMap<K, V> this, Map<? extends K, ? extends V> m) {
         int n = m.size();
         if (n == 0)
@@ -537,6 +556,8 @@ public class IdentityHashMap<K,V>
 
     /**
      * Removes the mapping for this key from this map if present.
+     * The mapping is removed if and only if the mapping has a key
+     * {@code k} such that (key == k).
      *
      * @param key key whose mapping is to be removed from the map
      * @return the previous value associated with {@code key}, or
@@ -544,6 +565,8 @@ public class IdentityHashMap<K,V>
      *         (A {@code null} return can also indicate that the map
      *         previously associated {@code null} with {@code key}.)
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public @Nullable V remove(@GuardSatisfied IdentityHashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object key) {
         Object k = maskNull(key);
         Object[] tab = table;
@@ -640,6 +663,8 @@ public class IdentityHashMap<K,V>
      * Removes all of the mappings from this map.
      * The map will be empty after this call returns.
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public void clear(@GuardSatisfied IdentityHashMap<K, V> this) {
         modCount++;
         Object[] tab = table;
@@ -653,7 +678,9 @@ public class IdentityHashMap<K,V>
      * {@code true} if the given object is also a map and the two maps
      * represent identical object-reference mappings.  More formally, this
      * map is equal to another map {@code m} if and only if
-     * {@code this.entrySet().equals(m.entrySet())}.
+     * {@code this.entrySet().equals(m.entrySet())}. See the
+     * {@link entrySet() entrySet} method for the specification of equality
+     * of this map's entries.
      *
      * <p><b>Owing to the reference-equality-based semantics of this map it is
      * possible that the symmetry and transitivity requirements of the
@@ -689,8 +716,11 @@ public class IdentityHashMap<K,V>
 
     /**
      * Returns the hash code value for this map.  The hash code of a map is
-     * defined to be the sum of the hash codes of each entry in the map's
-     * {@code entrySet()} view.  This ensures that {@code m1.equals(m2)}
+     * defined to be the sum of the hash codes of each entry of this map.
+     * See the {@link entrySet() entrySet} method for a specification of the
+     * hash code of this map's entries.
+     *
+     * <p>This specification ensures that {@code m1.equals(m2)}
      * implies that {@code m1.hashCode()==m2.hashCode()} for any two
      * {@code IdentityHashMap} instances {@code m1} and {@code m2}, as
      * required by the general contract of {@link Object#hashCode}.
@@ -761,7 +791,7 @@ public class IdentityHashMap<K,V>
             return false;
         }
 
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         protected int nextIndex(@NonEmpty IdentityHashMapIterator<T> this) {
             if (modCount != expectedModCount)
                 throw new ConcurrentModificationException();
@@ -774,6 +804,8 @@ public class IdentityHashMap<K,V>
             return lastReturnedIndex;
         }
 
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void remove() {
             if (lastReturnedIndex == -1)
                 throw new IllegalStateException();
@@ -854,6 +886,8 @@ public class IdentityHashMap<K,V>
 
     private class KeyIterator extends IdentityHashMapIterator<K> {
         @SuppressWarnings("unchecked")
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public K next(@NonEmpty KeyIterator this) {
             return (K) unmaskNull(traversalTable[nextIndex()]);
         }
@@ -861,6 +895,8 @@ public class IdentityHashMap<K,V>
 
     private class ValueIterator extends IdentityHashMapIterator<V> {
         @SuppressWarnings("unchecked")
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public V next(@NonEmpty ValueIterator this) {
             return (V) traversalTable[nextIndex() + 1];
         }
@@ -871,11 +907,15 @@ public class IdentityHashMap<K,V>
     {
         private Entry lastReturnedEntry;
 
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public Map.Entry<K,V> next(@NonEmpty EntryIterator this) {
             lastReturnedEntry = new Entry(nextIndex());
             return lastReturnedEntry;
         }
 
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void remove() {
             lastReturnedIndex =
                 ((null == lastReturnedEntry) ? -1 : lastReturnedEntry.index);
@@ -892,18 +932,22 @@ public class IdentityHashMap<K,V>
             }
 
             @SuppressWarnings("unchecked")
+            @Pure
             public K getKey() {
                 checkIndexForEntryUse();
                 return (K) unmaskNull(traversalTable[index]);
             }
 
             @SuppressWarnings("unchecked")
+            @Pure
             public V getValue() {
                 checkIndexForEntryUse();
                 return (V) traversalTable[index+1];
             }
 
             @SuppressWarnings("unchecked")
+            // @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
             public V setValue(V value) {
                 checkIndexForEntryUse();
                 V oldValue = (V) traversalTable[index+1];
@@ -914,6 +958,7 @@ public class IdentityHashMap<K,V>
                 return oldValue;
             }
 
+            @Pure
             public boolean equals(@Nullable Object o) {
                 if (index < 0)
                     return super.equals(o);
@@ -923,6 +968,7 @@ public class IdentityHashMap<K,V>
                         && e.getValue() == traversalTable[index+1];
             }
 
+            @Pure
             public int hashCode() {
                 if (lastReturnedIndex < 0)
                     return super.hashCode();
@@ -931,6 +977,7 @@ public class IdentityHashMap<K,V>
                        System.identityHashCode(traversalTable[index+1]));
             }
 
+            @SideEffectFree
             public String toString() {
                 if (index < 0)
                     return super.toString();
@@ -1017,6 +1064,8 @@ public class IdentityHashMap<K,V>
         public boolean contains(@Nullable @UnknownSignedness Object o) {
             return containsKey(o);
         }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@Nullable @UnknownSignedness Object o) {
             int oldSize = size;
             IdentityHashMap.this.remove(o);
@@ -1027,6 +1076,8 @@ public class IdentityHashMap<K,V>
          * the former contains an optimization that results in incorrect
          * behavior when c is a smaller "normal" (non-identity-based) Set.
          */
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
             Objects.requireNonNull(c);
             boolean modified = false;
@@ -1038,9 +1089,12 @@ public class IdentityHashMap<K,V>
             }
             return modified;
         }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             IdentityHashMap.this.clear();
         }
+        @Pure
         public int hashCode() {
             int result = 0;
             for (K key : this)
@@ -1052,7 +1106,6 @@ public class IdentityHashMap<K,V>
             return toArray(new Object[0]);
         }
         @SuppressWarnings("unchecked")
-        @SideEffectFree
         public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             int expectedModCount = modCount;
             int size = size();
@@ -1131,6 +1184,8 @@ public class IdentityHashMap<K,V>
         public boolean contains(@Nullable @UnknownSignedness Object o) {
             return containsValue(o);
         }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@Nullable @UnknownSignedness Object o) {
             for (Iterator<V> i = iterator(); i.hasNext(); ) {
                 if (i.next() == o) {
@@ -1140,6 +1195,8 @@ public class IdentityHashMap<K,V>
             }
             return false;
         }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             IdentityHashMap.this.clear();
         }
@@ -1148,7 +1205,6 @@ public class IdentityHashMap<K,V>
             return toArray(new Object[0]);
         }
         @SuppressWarnings("unchecked")
-        @SideEffectFree
         public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             int expectedModCount = modCount;
             int size = size();
@@ -1205,7 +1261,9 @@ public class IdentityHashMap<K,V>
      * e.getValue()==o.getValue()}.  To accommodate these equals
      * semantics, the {@code hashCode} method returns
      * {@code System.identityHashCode(e.getKey()) ^
-     * System.identityHashCode(e.getValue())}.
+     * System.identityHashCode(e.getValue())}. (While the keys and values
+     * are compared using reference equality, the {@code Map.Entry}
+     * objects themselves are not.)
      *
      * <p><b>Owing to the reference-equality-based semantics of the
      * {@code Map.Entry} instances in the set returned by this method,
@@ -1240,6 +1298,8 @@ public class IdentityHashMap<K,V>
             return o instanceof Entry<?, ?> entry
                     && containsMapping(entry.getKey(), entry.getValue());
         }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@Nullable @UnknownSignedness Object o) {
             return o instanceof Entry<?, ?> entry
                     && removeMapping(entry.getKey(), entry.getValue());
@@ -1248,6 +1308,8 @@ public class IdentityHashMap<K,V>
         public @NonNegative int size() {
             return size;
         }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             IdentityHashMap.this.clear();
         }
@@ -1256,6 +1318,8 @@ public class IdentityHashMap<K,V>
          * the former contains an optimization that results in incorrect
          * behavior when c is a smaller "normal" (non-identity-based) Set.
          */
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
             Objects.requireNonNull(c);
             boolean modified = false;
@@ -1274,7 +1338,6 @@ public class IdentityHashMap<K,V>
         }
 
         @SuppressWarnings("unchecked")
-        @SideEffectFree
         public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             int expectedModCount = modCount;
             int size = size();
@@ -1323,12 +1386,12 @@ public class IdentityHashMap<K,V>
      *          particular order.
      */
     @java.io.Serial
-    private void writeObject(java.io.ObjectOutputStream s)
+    private void writeObject(ObjectOutputStream s)
         throws java.io.IOException  {
-        // Write out and any hidden stuff
+        // Write out size (number of mappings) and any hidden stuff
         s.defaultWriteObject();
 
-        // Write out size (number of Mappings)
+        // Write out size again (maintained for backward compatibility)
         s.writeInt(size);
 
         // Write out keys and values (alternating)
@@ -1347,18 +1410,20 @@ public class IdentityHashMap<K,V>
      * deserializes it).
      */
     @java.io.Serial
-    private void readObject(java.io.ObjectInputStream s)
+    private void readObject(ObjectInputStream s)
         throws java.io.IOException, ClassNotFoundException  {
-        // Read in any hidden stuff
-        s.defaultReadObject();
+        // Size (number of mappings) is written to the stream twice
+        // Read first size value and ignore it
+        s.readFields();
 
-        // Read in size (number of Mappings)
+        // Read second size value, validate and assign to size field
         int size = s.readInt();
         if (size < 0)
             throw new java.io.StreamCorruptedException
                 ("Illegal mappings count: " + size);
         int cap = capacity(size);
-        SharedSecrets.getJavaObjectInputStreamAccess().checkArray(s, Object[].class, cap);
+        SharedSecrets.getJavaObjectInputStreamAccess().checkArray(s, Object[].class, cap*2);
+        this.size = size;
         init(cap);
 
         // Read the keys and values, and put the mappings in the table
@@ -1414,6 +1479,7 @@ public class IdentityHashMap<K,V>
 
     @SuppressWarnings("unchecked")
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public void replaceAll(BiFunction<? super K, ? super V, ? extends V> function) {
         Objects.requireNonNull(function);
         int expectedModCount = modCount;
@@ -1428,6 +1494,54 @@ public class IdentityHashMap<K,V>
             if (modCount != expectedModCount) {
                 throw new ConcurrentModificationException();
             }
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>More formally, if this map contains a mapping from a key
+     * {@code k} to a value {@code v} such that {@code (key == k)}
+     * and {@code (value == v)}, then this method removes the mapping
+     * for this key and returns {@code true}; otherwise it returns
+     * {@code false}.
+     */
+    @Override
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean remove(Object key, Object value) {
+        return removeMapping(key, value);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>More formally, if this map contains a mapping from a key
+     * {@code k} to a value {@code v} such that {@code (key == k)}
+     * and {@code (oldValue == v)}, then this method associates
+     * {@code k} with {@code newValue} and returns {@code true};
+     * otherwise it returns {@code false}.
+     */
+    @Override
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean replace(K key, V oldValue, V newValue) {
+        Object k = maskNull(key);
+        Object[] tab = table;
+        int len = tab.length;
+        int i = hash(k, len);
+
+        while (true) {
+            Object item = tab[i];
+            if (item == k) {
+                if (tab[i + 1] != oldValue)
+                    return false;
+                tab[i + 1] = newValue;
+                return true;
+            }
+            if (item == null)
+                return false;
+            i = nextKeyIndex(i, len);
         }
     }
 

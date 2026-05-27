@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,9 @@
 package java.nio.file.attribute;
 
 import java.io.IOException;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
  * A file attribute view that provides a view of a <em>basic set</em> of file
@@ -101,6 +104,7 @@ import java.io.IOException;
  * @since 1.7
  */
 
+@AnnotatedFor({"nullness"})
 public interface BasicFileAttributeView
     extends FileAttributeView
 {
@@ -134,7 +138,7 @@ public interface BasicFileAttributeView
      *
      * <p> This method updates the file's timestamp attributes. The values are
      * converted to the epoch and precision supported by the file system.
-     * Converting from finer to coarser granularities result in precision loss.
+     * Converting from finer to coarser granularities results in precision loss.
      * The behavior of this method when attempting to set a timestamp that is
      * not supported or to a value that is outside the range supported by the
      * underlying file store is not defined. It may or not fail by throwing an
@@ -153,11 +157,11 @@ public interface BasicFileAttributeView
      *
      * <p> <b>Usage Example:</b>
      * Suppose we want to change a file's last access time.
-     * <pre>
-     *    Path path = ...
-     *    FileTime time = ...
-     *    Files.getFileAttributeView(path, BasicFileAttributeView.class).setTimes(null, time, null);
-     * </pre>
+     * {@snippet lang=java :
+     *     Path path = ...
+     *     FileTime time = ...
+     *     Files.getFileAttributeView(path, BasicFileAttributeView.class).setTimes(null, time, null);
+     * }
      *
      * @param   lastModifiedTime
      *          the new last modified time, or {@code null} to not change the
@@ -176,7 +180,7 @@ public interface BasicFileAttributeView
      *
      * @see java.nio.file.Files#setLastModifiedTime
      */
-    void setTimes(FileTime lastModifiedTime,
-                  FileTime lastAccessTime,
-                  FileTime createTime) throws IOException;
+    void setTimes(@Nullable FileTime lastModifiedTime,
+                  @Nullable FileTime lastAccessTime,
+                  @Nullable FileTime createTime) throws IOException;
 }
