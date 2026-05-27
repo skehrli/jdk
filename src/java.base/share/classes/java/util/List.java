@@ -333,7 +333,7 @@ public interface List<E extends @MustCallUnknown Object> extends SequencedCollec
      */
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    boolean remove(@GuardSatisfied @Shrinkable List<E> this, @UnknownSignedness Object o);
+    boolean remove(@GuardSatisfied @CanShrink List<E> this, @UnknownSignedness Object o);
 
     // Bulk Modification Operations
 

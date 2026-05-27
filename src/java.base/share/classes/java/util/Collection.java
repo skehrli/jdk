@@ -680,7 +680,7 @@ public interface Collection<E extends @MustCallUnknown Object> extends Iterable<
      */
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    void clear(@GuardSatisfied @Shrinkable @CanShrink @OwningCollectionWithoutObligation Collection<E> this);
+    void clear(@GuardSatisfied @CanShrink @OwningCollectionWithoutObligation Collection<E> this);
 
     // Comparison and hashing
 
