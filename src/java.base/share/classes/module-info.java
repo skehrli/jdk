@@ -78,6 +78,7 @@ module java.base {
 
     exports org.checkerframework.checker.builder.qual;
     exports org.checkerframework.checker.calledmethods.qual;
+    exports org.checkerframework.checker.collectionownership.qual;
     exports org.checkerframework.checker.compilermsgs.qual;
     exports org.checkerframework.checker.fenum.qual;
     exports org.checkerframework.checker.formatter.qual;
